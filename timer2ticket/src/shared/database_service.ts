@@ -53,6 +53,10 @@ export class DatabaseService {
     this._mongoClient?.close();
   }
 
+  // ***********************************************************
+  // USERS *****************************************************
+  // ***********************************************************
+
   async getUser(username: string): Promise<User | null> {
     if (!this._usersCollection) return null;
 
@@ -66,14 +70,43 @@ export class DatabaseService {
     const filterQuery = { _id: new ObjectId(user._id) };
 
     const result = await this._usersCollection.replaceOne(filterQuery, user);
-    return result.modifiedCount === 1 ? result.ops[0] : null;
+    return result.result.ok === 1 ? result.ops[0] : null;
   }
+
+  // ***********************************************************
+  // TIME ENTRY SYNCED OBJECTS *********************************
+  // ***********************************************************
 
   async getTimeEntrySyncedObjects(user: User): Promise<TimeEntrySyncedObject[] | null> {
     if (!this._timeEntrySyncedObjectsCollection) return null;
 
     const filterQuery = { userId: new ObjectId(user._id) };
     return this._timeEntrySyncedObjectsCollection.find(filterQuery).toArray();
+  }
+
+  async createTimeEntrySyncedObject(timeEntrySyncedObject: TimeEntrySyncedObject): Promise<TimeEntrySyncedObject | null> {
+    if (!this._timeEntrySyncedObjectsCollection) return null;
+
+    const result = await this._timeEntrySyncedObjectsCollection.insertOne(timeEntrySyncedObject);
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
+
+  async updateTimeEntrySyncedObject(timeEntrySyncedObject: TimeEntrySyncedObject): Promise<TimeEntrySyncedObject | null> {
+    if (!this._timeEntrySyncedObjectsCollection) return null;
+
+    const filterQuery = { _id: new ObjectId(timeEntrySyncedObject._id) };
+
+    const result = await this._timeEntrySyncedObjectsCollection.replaceOne(filterQuery, timeEntrySyncedObject);
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
+
+  async deleteTimeEntrySyncedObject(timeEntrySyncedObject: TimeEntrySyncedObject): Promise<boolean> {
+    if (!this._timeEntrySyncedObjectsCollection) return false;
+
+    const filterQuery = { _id: new ObjectId(timeEntrySyncedObject._id) };
+
+    const result = await this._timeEntrySyncedObjectsCollection.deleteOne(filterQuery);
+    return result.result.ok === 1;
   }
 }
 

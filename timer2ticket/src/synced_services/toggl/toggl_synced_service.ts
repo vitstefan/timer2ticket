@@ -225,8 +225,55 @@ export class TogglTrackSyncedService implements SyncedService {
     return entries;
   }
 
-  createTimeEntry(durationInMilliseconds: number, start: Date, end: Date, text: string, additionalData: ServiceObject[]): Promise<TimeEntry | null> {
-    throw new Error("Method not implemented.");
+  async createTimeEntry(durationInMilliseconds: number, start: Date, end: Date, text: string, additionalData: ServiceObject[]): Promise<TimeEntry | null> {
+    let projectId;
+    const tags: string[] = [];
+
+    for (const data of additionalData) {
+      if (data.type === this._projectsType) {
+        projectId = data.id;
+      } else {
+        tags.push(data.name);
+      }
+    }
+
+    if (!projectId) {
+      // projectId is required
+      return null;
+    }
+
+    const timeEntryBody: Record<string, unknown> = {
+      // minimum value in Redmine is 0.01, so if it is empty, insert exact 0.0, something between => 0.01, else > 0.01
+      duration: durationInMilliseconds / 1000,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      pid: projectId,
+      duronly: true,
+      description: text,
+      tags: tags,
+      //TODO created_with - should be application name
+      created_with: 'Timer2Ticket',
+    };
+
+    const response = await superagent
+      .post(this._timeEntriesUri)
+      .auth(this._serviceDefinition.apiKey, 'api_token')
+      .send({ time_entry: timeEntryBody });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return new TogglTimeEntry(
+      response.body.data['id'],
+      response.body.data['pid'],
+      response.body.data['description'],
+      new Date(response.body.data['start']),
+      new Date(response.body.data['stop']),
+      response.body.data['duration'] * 1000,
+      response.body.data['tags'],
+      new Date(response.body.data['at']),
+    );
   }
 
   // via reports

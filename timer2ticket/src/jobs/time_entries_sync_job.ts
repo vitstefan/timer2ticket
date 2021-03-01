@@ -42,6 +42,8 @@ export class TimeEntriesSyncJob implements SyncJob {
     // c) TESO is there, but for some services is missing (STEOs are incomplete)
     //    => check if not somewhere updated like b), then update, otherwise do not
     //    => then sync with missing services and create new STEOs for TESO and update TESO's lastUpdated
+    // d) TESO is there, but TE is missing in the origin service (probably deleted on purpose)
+    //    => delete from other services and delete TESO
     // object wrapper for service and its timeEntries
     const serviceTimeEntriesWrappers: ServiceTimeEntriesWrapper[] = [];
 
@@ -58,26 +60,36 @@ export class TimeEntriesSyncJob implements SyncJob {
       ));
     }
 
-    // console.log(serviceTimeEntries);
-
+    // get all TESOs from DB for user
     const timeEntrySyncedObjects = await databaseService.getTimeEntrySyncedObjects(user);
 
     for (const serviceTimeEntriesWrapper of serviceTimeEntriesWrappers) {
       for (const timeEntry of serviceTimeEntriesWrapper.timeEntries) {
+        // find TESO for TE
         const timeEntrySyncedObject = timeEntrySyncedObjects?.find((teso: TimeEntrySyncedObject) =>
           teso.serviceTimeEntryObjects
             .find((steo: ServiceTimeEntryObject) =>
               steo.service === serviceTimeEntriesWrapper.serviceDefinition.name
               && steo.id === timeEntry.id));
 
-        if (timeEntrySyncedObject) {
-          // scenario b) or c)
-          console.log('b) or c)');
-        } else {
-          // scenario a)
-          console.log('a)');
-          await this._createTimeEntrySyncedObject(user, serviceTimeEntriesWrapper, serviceTimeEntriesWrappers, timeEntry);
+        try {
+          if (timeEntrySyncedObject) {
+            // if TESO for TE exists => scenario b), c), d)
+            console.log('b), c), d)');
+          } else {
+            // TESO does not exist => scenario a)
+            console.log('a)');
+            const newTimeEntrySyncedObject = await this._createTimeEntrySyncedObject(user, serviceTimeEntriesWrapper, serviceTimeEntriesWrappers, timeEntry);
+            if (newTimeEntrySyncedObject) {
+              await databaseService.createTimeEntrySyncedObject(newTimeEntrySyncedObject);
+            }
+          }
+        } catch (ex) {
+          // TODO catch specific exception
+          console.log(ex);
         }
+
+        // TODO timeEntrySyncedObject to DB
       }
     }
 
@@ -89,13 +101,18 @@ export class TimeEntriesSyncJob implements SyncJob {
     timeEntryOriginServiceWrapper: ServiceTimeEntriesWrapper,
     serviceTimeEntriesWrappers: ServiceTimeEntriesWrapper[],
     timeEntry: TimeEntry)
-    : Promise<TimeEntrySyncedObject | null> {
+    : Promise<TimeEntrySyncedObject | undefined> {
     const newTimeEntrySyncedObjectResult = new TimeEntrySyncedObject(user._id);
+
+    // firstly, push origin service (from which time entry came from)
+    newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.push(
+      new ServiceTimeEntryObject(timeEntry.id, timeEntryOriginServiceWrapper.serviceDefinition.name, true)
+    );
 
     const otherServiceTimeEntriesWrappers = serviceTimeEntriesWrappers
       .filter(stew => stew.serviceDefinition.name !== timeEntryOriginServiceWrapper.serviceDefinition.name);
 
-    const otherServicesMappingsObjects = TimeEntryManagerCreator.create(timeEntryOriginServiceWrapper.serviceDefinition).getOtherMappingsObjects(timeEntry, user.mappings);
+    const otherServicesMappingsObjects = TimeEntryManagerCreator.create(timeEntryOriginServiceWrapper.serviceDefinition).extractMappingsObjectsFromTimeEntry(timeEntry, user.mappings);
 
     for (const otherServiceDefinition of otherServiceTimeEntriesWrappers) {
       const otherServiceMappingsObjects = otherServicesMappingsObjects.filter(mappingsObject => mappingsObject.service === otherServiceDefinition.serviceDefinition.name);
@@ -109,29 +126,25 @@ export class TimeEntriesSyncJob implements SyncJob {
         ));
       }
 
-      // TODO remove after this implemented
-      /**createTimeEntry(durationInMilliseconds: number, start: Date, end: Date, text: string, additionalData: ServiceObject[]): Promise<TimeEntry | null> {
-    throw new Error("Method not implemented.");
-  } */
-      if (otherServiceDefinition.serviceDefinition.name !== 'TogglTrack') {
-        // create real time entry object in the other services
-        const createdTimeEntry = await otherServiceDefinition.syncedService.createTimeEntry(
-          timeEntry.durationInMilliseconds, new Date(timeEntry.start), new Date(timeEntry.end), timeEntry.text, serviceObjectsMappings,
+      // create real time entry object in the other services
+      const createdTimeEntry = await otherServiceDefinition.syncedService.createTimeEntry(
+        timeEntry.durationInMilliseconds, new Date(timeEntry.start), new Date(timeEntry.end), timeEntry.text, serviceObjectsMappings,
+      );
+
+      if (createdTimeEntry) {
+        // push newly created STEOs (with isOrigin: false)
+        newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.push(
+          new ServiceTimeEntryObject(createdTimeEntry.id, otherServiceDefinition.serviceDefinition.name, false)
         );
 
-        if (createdTimeEntry) {
-          newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.push(
-            new ServiceTimeEntryObject(createdTimeEntry.id, otherServiceDefinition.serviceDefinition.name, false)
-          );
-
-          // lastly created -> update lastUpdate
-          newTimeEntrySyncedObjectResult.lastUpdated = new Date(createdTimeEntry.lastUpdated).getTime();
-        }
+        // lastly created -> update lastUpdate
+        newTimeEntrySyncedObjectResult.lastUpdated = new Date(createdTimeEntry.lastUpdated).getTime();
       }
     }
 
-    if (newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.length === 0) {
-      return null
+    if (newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.length <= 1) {
+      // means only that from origin was added, seems like an error
+      return undefined;
     }
 
     // console.log(newTimeEntrySyncedObjectResult);

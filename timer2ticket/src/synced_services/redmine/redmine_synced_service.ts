@@ -233,7 +233,7 @@ export class RedmineSyncedService implements SyncedService {
     }
 
     const hours = durationInMilliseconds / 1000 / 60 / 60;
-    const queryParams: Record<string, unknown> = {
+    const timeEntryBody: Record<string, unknown> = {
       // minimum value in Redmine is 0.01, so if it is empty, insert exact 0.0, something between => 0.01, else > 0.01
       hours: (hours === 0.0 || hours > 0.01) ? hours : 0.01,
       spent_on: Utilities.getOnlyDateString(start),
@@ -243,10 +243,10 @@ export class RedmineSyncedService implements SyncedService {
       activity_id: activityId ? activityId : this._serviceDefinition.config.defaultTimeEntryActivityId,
     };
     if (projectId) {
-      queryParams['project_id'] = projectId;
+      timeEntryBody['project_id'] = projectId;
     }
     if (issueId) {
-      queryParams['issue_id'] = issueId;
+      timeEntryBody['issue_id'] = issueId;
     }
 
     const response = await superagent
@@ -254,7 +254,7 @@ export class RedmineSyncedService implements SyncedService {
       .accept('application/json')
       .type('application/json')
       .set('X-Redmine-API-Key', this._serviceDefinition.apiKey)
-      .send({ time_entry: queryParams });
+      .send({ time_entry: timeEntryBody });
 
     if (!response.ok) {
       return null;
