@@ -1,5 +1,6 @@
 import { ServiceObject } from "../models/synced_service/service_object/service_object";
 import { TimeEntry } from "../models/synced_service/time_entry/time_entry";
+import { TimeEntryManagerCreator } from "./time_entry_manager_creator";
 
 export interface SyncedService {
   /**
@@ -40,5 +41,19 @@ export interface SyncedService {
    */
   getTimeEntries(start?: Date, end?: Date): Promise<TimeEntry[]>;
 
+  /**
+   * Create a new time entry real object in the service, returns specific TimeEntry
+   * @param durationInMilliseconds 
+   * @param start 
+   * @param end 
+   * @param text 
+   * @param additionalData 
+   */
   createTimeEntry(durationInMilliseconds: number, start: Date, end: Date, text: string, additionalData: ServiceObject[]): Promise<TimeEntry | null>;
+
+  /**
+   * Delete time entry with given id, returns true if successfully deleted
+   * @param id of the time entry to delete from the service
+   */
+  deleteTimeEntry(id: string | number): Promise<boolean>;
 }

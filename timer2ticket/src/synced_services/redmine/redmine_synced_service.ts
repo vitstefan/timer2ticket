@@ -276,4 +276,14 @@ export class RedmineSyncedService implements SyncedService {
       new Date(response.body.time_entry['updated_on']),
     );
   }
+
+  async deleteTimeEntry(id: string | number): Promise<boolean> {
+    const response = await superagent
+      .delete(`${this._timeEntriesUri.substring(0, this._timeEntriesUri.length - 5)}/${id}.json`)
+      .accept('application/json')
+      .type('application/json')
+      .set('X-Redmine-API-Key', this._serviceDefinition.apiKey);
+
+    return response.ok;
+  }
 }

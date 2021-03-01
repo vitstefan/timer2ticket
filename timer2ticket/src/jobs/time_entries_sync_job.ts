@@ -10,6 +10,7 @@ import { ServiceTimeEntryObject } from "../models/synced_service/time_entry_sync
 import { SyncedService } from "../synced_services/synced_service";
 import { ServiceObject } from "../models/synced_service/service_object/service_object";
 import { TimeEntryManagerCreator } from "../synced_services/time_entry_manager_creator";
+import { MappingsObject } from "../models/mapping/mappings_object";
 
 export class TimeEntriesSyncJob implements SyncJob {
   /**
@@ -37,59 +38,99 @@ export class TimeEntriesSyncJob implements SyncJob {
     //    => sync to all other services and then create new TESO
     // b) TESO is there for all services (all serviceTimeEntryObjects (STEOs) are in the TESO)
     //    => check if in any of those services does not contain updated TE (take the most recent)
-    //    => if yes, then update in all other services and update TESO's lastUpdated
-    //    => if no, it is synced - do nothing
+    //    1) => if yes, then update in all other services and update TESO's lastUpdated
+    //    2) => if no, it is synced - do nothing
     // c) TESO is there, but for some services is missing (STEOs are incomplete)
     //    => check if not somewhere updated like b), then update, otherwise do not
-    //    => then sync with missing services and create new STEOs for TESO and update TESO's lastUpdated
+    //    => then sync with missing services and create new STEOs for TESO and update TESO's lastUpdated + create new TE
     // d) TESO is there, but TE is missing in the origin service (probably deleted on purpose)
     //    => delete from other services and delete TESO
+    // e) TESO is there, but TE is missing in the non origin service
+    //    => create new TE for the service
     // object wrapper for service and its timeEntries
     const serviceTimeEntriesWrappers: ServiceTimeEntriesWrapper[] = [];
+    const serviceTimeEntriesWrappersMap: Map<string, ServiceTimeEntriesWrapper> = new Map();
 
     // for each service definition, request time entries and then for each other service definition, sync them
     for (const serviceDefinition of user.serviceDefinitions) {
       const syncedService = SyncedServiceCreator.create(serviceDefinition);
-      // const timeEntries = await syncedService.getTimeEntries(start, now);
-      // console.log(`\n${serviceDefinition.name} *********************************\n`);
-      // console.log(timeEntries);
-      serviceTimeEntriesWrappers.push(new ServiceTimeEntriesWrapper(
+      const serviceTimeEntriesWrapper = new ServiceTimeEntriesWrapper(
         serviceDefinition,
         syncedService,
         await syncedService.getTimeEntries(start, now),
-      ));
+      );
+
+      serviceTimeEntriesWrappers.push(serviceTimeEntriesWrapper);
+      serviceTimeEntriesWrappersMap.set(serviceDefinition.name, serviceTimeEntriesWrapper);
     }
+
+    const timeEntrySyncedObjectWrappers: TimeEntrySyncedObjectWrapper[] = [];
 
     // get all TESOs from DB for user
     const timeEntrySyncedObjects = await databaseService.getTimeEntrySyncedObjects(user);
 
+    if (!timeEntrySyncedObjects) return false;
+
+    for (const timeEntrySyncedObject of timeEntrySyncedObjects) {
+      const timeEntrySyncedObjectWrapper = new TimeEntrySyncedObjectWrapper(timeEntrySyncedObject);
+
+      for (const serviceTimeEntryObject of timeEntrySyncedObject.serviceTimeEntryObjects) {
+        const serviceTimeEntryObjectWrapper = new ServiceTimeEntryObjectWrapper(serviceTimeEntryObject);
+
+        const serviceTimeEntriesWrapper = serviceTimeEntriesWrappersMap.get(serviceTimeEntryObject.service);
+
+        if (serviceTimeEntriesWrapper) {
+          serviceTimeEntryObjectWrapper.serviceDefinition = serviceTimeEntriesWrapper.serviceDefinition;
+          serviceTimeEntryObjectWrapper.syncedService = serviceTimeEntriesWrapper.syncedService;
+          serviceTimeEntryObjectWrapper.timeEntry = serviceTimeEntriesWrapper.timeEntries.find(te => te.id === serviceTimeEntryObject.id);
+          // for those serviceTimeEntryObjectWrapper that .find() above returned undefined => serviceTimeEntryObject exists, but TE does not => scenario d) and e)
+
+          timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers.push(serviceTimeEntryObjectWrapper);
+        }
+      }
+
+      timeEntrySyncedObjectWrappers.push(timeEntrySyncedObjectWrapper);
+    }
+
+    // find timeEntries that do not have its timeEntrySyncedObject => scenario a)
+    // need to loop all timeEntries and try to find its TESO wrapper in timeEntrySyncedObjectWrappers
     for (const serviceTimeEntriesWrapper of serviceTimeEntriesWrappers) {
       for (const timeEntry of serviceTimeEntriesWrapper.timeEntries) {
-        // find TESO for TE
-        const timeEntrySyncedObject = timeEntrySyncedObjects?.find((teso: TimeEntrySyncedObject) =>
-          teso.serviceTimeEntryObjects
-            .find((steo: ServiceTimeEntryObject) =>
-              steo.service === serviceTimeEntriesWrapper.serviceDefinition.name
-              && steo.id === timeEntry.id));
-
-        try {
-          if (timeEntrySyncedObject) {
-            // if TESO for TE exists => scenario b), c), d)
-            console.log('b), c), d)');
-          } else {
-            // TESO does not exist => scenario a)
-            console.log('a)');
-            const newTimeEntrySyncedObject = await this._createTimeEntrySyncedObject(user, serviceTimeEntriesWrapper, serviceTimeEntriesWrappers, timeEntry);
-            if (newTimeEntrySyncedObject) {
-              await databaseService.createTimeEntrySyncedObject(newTimeEntrySyncedObject);
+        let timeEntrySyncedObjectFound = false;
+        for (const timeEntrySyncedObjectWrapper of timeEntrySyncedObjectWrappers) {
+          for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
+            if (serviceTimeEntryObjectWrapper.timeEntry
+              && serviceTimeEntryObjectWrapper.timeEntry.id === timeEntry.id
+              && serviceTimeEntryObjectWrapper.serviceDefinition.name === serviceTimeEntriesWrapper.serviceDefinition.name) {
+              // found
+              timeEntrySyncedObjectFound = true;
             }
           }
-        } catch (ex) {
-          // TODO catch specific exception
-          console.log(ex);
         }
 
-        // TODO timeEntrySyncedObject to DB
+        if (timeEntrySyncedObjectFound === false) {
+          // TESO does not exist => scenario a)
+
+          // prepare serviceTimeEntriesWrappers that are different from real TE's service wrapper
+          const otherServiceTimeEntriesWrappers = serviceTimeEntriesWrappers
+            .filter(stew => stew.serviceDefinition.name !== serviceTimeEntriesWrapper.serviceDefinition.name);
+
+          console.log('a)');
+          const newTimeEntrySyncedObject = await this._createTimeEntrySyncedObject(user, serviceTimeEntriesWrapper, otherServiceTimeEntriesWrappers, timeEntry);
+          if (newTimeEntrySyncedObject) {
+            // no need to await DB changes
+            databaseService.createTimeEntrySyncedObject(newTimeEntrySyncedObject);
+          }
+        }
+      }
+    }
+
+    // other scenarios b), c), d), e)
+    for (const timeEntrySyncedObjectWrapper of timeEntrySyncedObjectWrappers) {
+      if (await this._checkTimeEntrySyncedObject(user, timeEntrySyncedObjectWrapper)) {
+        // some changes probably were made to TESO object, update it in db
+        // no need to await DB changes
+        databaseService.updateTimeEntrySyncedObject(timeEntrySyncedObjectWrapper.timeEntrySyncedObject);
       }
     }
 
@@ -99,7 +140,7 @@ export class TimeEntriesSyncJob implements SyncJob {
   private async _createTimeEntrySyncedObject(
     user: User,
     timeEntryOriginServiceWrapper: ServiceTimeEntriesWrapper,
-    serviceTimeEntriesWrappers: ServiceTimeEntriesWrapper[],
+    otherServiceTimeEntriesWrappers: ServiceTimeEntriesWrapper[],
     timeEntry: TimeEntry)
     : Promise<TimeEntrySyncedObject | undefined> {
     const newTimeEntrySyncedObjectResult = new TimeEntrySyncedObject(user._id);
@@ -109,37 +150,15 @@ export class TimeEntriesSyncJob implements SyncJob {
       new ServiceTimeEntryObject(timeEntry.id, timeEntryOriginServiceWrapper.serviceDefinition.name, true)
     );
 
-    const otherServiceTimeEntriesWrappers = serviceTimeEntriesWrappers
-      .filter(stew => stew.serviceDefinition.name !== timeEntryOriginServiceWrapper.serviceDefinition.name);
-
     const otherServicesMappingsObjects = TimeEntryManagerCreator.create(timeEntryOriginServiceWrapper.serviceDefinition).extractMappingsObjectsFromTimeEntry(timeEntry, user.mappings);
 
     for (const otherServiceDefinition of otherServiceTimeEntriesWrappers) {
-      const otherServiceMappingsObjects = otherServicesMappingsObjects.filter(mappingsObject => mappingsObject.service === otherServiceDefinition.serviceDefinition.name);
-
-      const serviceObjectsMappings: ServiceObject[] = [];
-      for (const otherServiceMappingsObject of otherServiceMappingsObjects) {
-        serviceObjectsMappings.push(new ServiceObject(
-          otherServiceMappingsObject.id,
-          otherServiceMappingsObject.name,
-          otherServiceMappingsObject.type,
-        ));
-      }
-
-      // create real time entry object in the other services
-      const createdTimeEntry = await otherServiceDefinition.syncedService.createTimeEntry(
-        timeEntry.durationInMilliseconds, new Date(timeEntry.start), new Date(timeEntry.end), timeEntry.text, serviceObjectsMappings,
+      await this._createTimeEntryBasedOnTimeEntryModelAndServiceDefinition(
+        otherServicesMappingsObjects,
+        otherServiceDefinition.serviceDefinition,
+        timeEntry,
+        newTimeEntrySyncedObjectResult,
       );
-
-      if (createdTimeEntry) {
-        // push newly created STEOs (with isOrigin: false)
-        newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.push(
-          new ServiceTimeEntryObject(createdTimeEntry.id, otherServiceDefinition.serviceDefinition.name, false)
-        );
-
-        // lastly created -> update lastUpdate
-        newTimeEntrySyncedObjectResult.lastUpdated = new Date(createdTimeEntry.lastUpdated).getTime();
-      }
     }
 
     if (newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.length <= 1) {
@@ -151,10 +170,181 @@ export class TimeEntriesSyncJob implements SyncJob {
     return newTimeEntrySyncedObjectResult;
   }
 
+
+  /**
+   * Returns true if timeEntrySyncedObjectWrapper.TESO needs to be updated in the DB
+   * @param user 
+   * @param timeEntrySyncedObjectWrapper 
+   */
+  private async _checkTimeEntrySyncedObject(
+    user: User,
+    timeEntrySyncedObjectWrapper: TimeEntrySyncedObjectWrapper)
+    : Promise<boolean> {
+    // firstly, find origin service
+    // if TE defined => loop through all other TEs and find the last updated one, 
+    //    if timeEntrySyncedObjectWrapper.lastUpdated is same as that one => scenario b2) otherwise b1)
+    // also, if TE missing, but STEO is there for given TE, scenario e)
+    // also, if there is missing STEO for some service => scenario c)
+    // if undefined (real TE is missing) => delete from all other services and delete TESO from DB - scenario d)
+    const originServiceTimeEntryObjectWrapper = timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers.find(steow => steow.serviceTimeEntryObject.isOrigin);
+
+    // it would be weird if this would happen
+    if (!originServiceTimeEntryObjectWrapper) return false;
+
+    if (originServiceTimeEntryObjectWrapper.timeEntry) {
+      // find last updated time entry among all time entries
+      let lastUpdatedServiceTimeEntryObjectWrapper = originServiceTimeEntryObjectWrapper;
+      for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
+        if (serviceTimeEntryObjectWrapper.timeEntry && lastUpdatedServiceTimeEntryObjectWrapper.timeEntry
+          && new Date(serviceTimeEntryObjectWrapper.timeEntry.lastUpdated).getTime() > new Date(lastUpdatedServiceTimeEntryObjectWrapper.timeEntry.lastUpdated).getTime()) {
+          lastUpdatedServiceTimeEntryObjectWrapper = serviceTimeEntryObjectWrapper;
+        }
+      }
+
+      // this kind of makes no sense, but it needs to be here for unexpected weird events (and for linter)
+      if (!lastUpdatedServiceTimeEntryObjectWrapper.timeEntry) return false;
+
+
+      const otherServicesMappingsObjects = TimeEntryManagerCreator
+        .create(lastUpdatedServiceTimeEntryObjectWrapper.serviceDefinition)
+        .extractMappingsObjectsFromTimeEntry(lastUpdatedServiceTimeEntryObjectWrapper.timeEntry, user.mappings);
+
+      if (timeEntrySyncedObjectWrapper.timeEntrySyncedObject.lastUpdated < new Date(lastUpdatedServiceTimeEntryObjectWrapper.timeEntry.lastUpdated).getTime()) {
+        // scenario b1) + possibly c) or e)
+        // somewhere it is updated => need to update all other services
+        // solution is: delete TEs from all other services and then propagate to scenario e) below
+        console.log('b1)');
+
+        // loop through all STEOs (except that which TE is updated last)
+        for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
+          if (serviceTimeEntryObjectWrapper !== lastUpdatedServiceTimeEntryObjectWrapper) {
+            // delete current TE from the service and continue to the scenario e)
+            await serviceTimeEntryObjectWrapper.syncedService.deleteTimeEntry(serviceTimeEntryObjectWrapper.serviceTimeEntryObject.id);
+            // set as undefined => use scenario e)
+            serviceTimeEntryObjectWrapper.timeEntry = undefined;
+          }
+        }
+      } else {
+        // scenario b2) + possibly c) or e)
+        // seems ok for now, try if it is not c) or e) too
+        console.log('b2)');
+      }
+
+      for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
+        if (!serviceTimeEntryObjectWrapper.timeEntry) {
+          // scenario e), STEO is there, but TE is missing (it could be both origin or non origin)
+          // why it could be origin? Only from b1) above, if user deleted it himself, it would go to scenario d) below
+          // need to create new TE (based on lastUpdatedServiceTimeEntryObjectWrapper.timeEntry)
+          console.log('e)');
+
+          // delete current STEO from the TESO
+          const index = timeEntrySyncedObjectWrapper.timeEntrySyncedObject.serviceTimeEntryObjects.indexOf(serviceTimeEntryObjectWrapper.serviceTimeEntryObject);
+          timeEntrySyncedObjectWrapper.timeEntrySyncedObject.serviceTimeEntryObjects.splice(index, 1);
+
+          // this method creates new STEO with correct id
+          serviceTimeEntryObjectWrapper.timeEntry = await this._createTimeEntryBasedOnTimeEntryModelAndServiceDefinition(
+            otherServicesMappingsObjects,
+            serviceTimeEntryObjectWrapper.serviceDefinition,
+            lastUpdatedServiceTimeEntryObjectWrapper.timeEntry,
+            timeEntrySyncedObjectWrapper.timeEntrySyncedObject,
+            serviceTimeEntryObjectWrapper.serviceTimeEntryObject.isOrigin,
+          );
+        }
+      }
+
+      for (const serviceDefinition of user.serviceDefinitions) {
+        const serviceTimeEntryObjectWrapper = timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers.find(steow => steow.serviceDefinition.name === serviceDefinition.name);
+        if (!serviceTimeEntryObjectWrapper) {
+          // service is missing (probably new one was added recently) => scenario c)
+          // create new TE for given service, then create new STEO and add to TESO
+          // TE should be created based on lastUpdatedServiceTimeEntryObjectWrapper.timeEntry
+          console.log('c)');
+
+          await this._createTimeEntryBasedOnTimeEntryModelAndServiceDefinition(
+            otherServicesMappingsObjects,
+            serviceDefinition,
+            lastUpdatedServiceTimeEntryObjectWrapper.timeEntry,
+            timeEntrySyncedObjectWrapper.timeEntrySyncedObject,
+          );
+        }
+      }
+    } else {
+      // scenario d)
+      console.log('d)');
+      let allDeleted = true;
+      for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
+        // not from origin (TE is already not there)
+        if (serviceTimeEntryObjectWrapper !== originServiceTimeEntryObjectWrapper) {
+          allDeleted &&= await serviceTimeEntryObjectWrapper.syncedService.deleteTimeEntry(serviceTimeEntryObjectWrapper.serviceTimeEntryObject.id);
+          console.log(`deleted TE from the ${serviceTimeEntryObjectWrapper.serviceDefinition.name} with id = ${serviceTimeEntryObjectWrapper.serviceTimeEntryObject.id}`);
+        }
+      }
+      if (allDeleted) {
+        // no need to await
+        databaseService.deleteTimeEntrySyncedObject(timeEntrySyncedObjectWrapper.timeEntrySyncedObject);
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Creates a new time entry for given service based on given TE model.
+   * Also creates new STEO and pushes it to the given TESO.
+   * Updates given TESO's lastUpdated property to newly created TE's date.
+   * Returns newly created TE if ok, otherwise undefined
+   * 
+   * @param otherServicesMappingsObjects 
+   * @param serviceDefinition
+   * @param timeEntryModel given TE model
+   * @param timeEntrySyncedObject given TESO
+   * @param shouldBeOrigin if new TE should be treated as origin (generally true if TE was updated in another non origin service and this serviceDefinition is true origin)
+   */
+  private async _createTimeEntryBasedOnTimeEntryModelAndServiceDefinition(
+    otherServicesMappingsObjects: MappingsObject[],
+    serviceDefinition: ServiceDefinition,
+    timeEntryModel: TimeEntry,
+    timeEntrySyncedObject: TimeEntrySyncedObject,
+    shouldBeOrigin = false)
+    : Promise<TimeEntry | undefined> {
+    const otherServiceMappingsObjects = otherServicesMappingsObjects.filter(mappingsObject => mappingsObject.service === serviceDefinition.name);
+
+    const serviceObjectsMappings: ServiceObject[] = [];
+    for (const otherServiceMappingsObject of otherServiceMappingsObjects) {
+      serviceObjectsMappings.push(new ServiceObject(
+        otherServiceMappingsObject.id,
+        otherServiceMappingsObject.name,
+        otherServiceMappingsObject.type,
+      ));
+    }
+
+    const createdTimeEntry = await SyncedServiceCreator.create(serviceDefinition).createTimeEntry(
+      timeEntryModel.durationInMilliseconds,
+      new Date(timeEntryModel.start),
+      new Date(timeEntryModel.end),
+      timeEntryModel.text,
+      serviceObjectsMappings,
+    );
+
+    if (createdTimeEntry) {
+      // push newly created STEOs (with isOrigin: false)
+      timeEntrySyncedObject.serviceTimeEntryObjects.push(
+        new ServiceTimeEntryObject(createdTimeEntry.id, serviceDefinition.name, shouldBeOrigin)
+      );
+
+      // lastly created -> update lastUpdate (every created TE will update lastUpdated, but the last created one counts)
+      timeEntrySyncedObject.lastUpdated = new Date(createdTimeEntry.lastUpdated).getTime();
+
+      return createdTimeEntry;
+    }
+
+    return undefined;
+  }
 }
 
 /**
- * Helper wrapper class that is not used anywhere else (not exported)
+ * Helper wrapper classes below are not used anywhere else (not exported)
  */
 class ServiceTimeEntriesWrapper {
   serviceDefinition: ServiceDefinition;
@@ -165,5 +355,26 @@ class ServiceTimeEntriesWrapper {
     this.serviceDefinition = serviceDefinition;
     this.syncedService = syncedService;
     this.timeEntries = timeEntries;
+  }
+}
+
+class TimeEntrySyncedObjectWrapper {
+  timeEntrySyncedObject: TimeEntrySyncedObject;
+  serviceTimeEntryObjectWrappers: ServiceTimeEntryObjectWrapper[];
+
+  constructor(timeEntrySyncedObject: TimeEntrySyncedObject) {
+    this.timeEntrySyncedObject = timeEntrySyncedObject;
+    this.serviceTimeEntryObjectWrappers = [];
+  }
+}
+
+class ServiceTimeEntryObjectWrapper {
+  serviceTimeEntryObject: ServiceTimeEntryObject;
+  timeEntry: TimeEntry | undefined;
+  serviceDefinition!: ServiceDefinition;
+  syncedService!: SyncedService;
+
+  constructor(serviceTimeEntryObject: ServiceTimeEntryObject) {
+    this.serviceTimeEntryObject = serviceTimeEntryObject;
   }
 }

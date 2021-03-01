@@ -276,6 +276,14 @@ export class TogglTrackSyncedService implements SyncedService {
     );
   }
 
+  async deleteTimeEntry(id: string | number): Promise<boolean> {
+    const response = await superagent
+      .delete(`${this._timeEntriesUri}/${id}`)
+      .auth(this._serviceDefinition.apiKey, 'api_token');
+
+    return response.ok;
+  }
+
   // via reports
   // async getTimeEntries(from?: Date, to?: Date): Promise<TimeEntry[]> {
   //   //TODO user_agent - should be email or application
