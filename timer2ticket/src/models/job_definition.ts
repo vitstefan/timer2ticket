@@ -28,4 +28,5 @@ export class JobDefinition {
    * So jobStart day should be used for the first sync, then only hours should take and compute next sync
    */
   periodInSeconds!: number;
+  schedule!: string;
 }

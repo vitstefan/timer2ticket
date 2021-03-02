@@ -4,6 +4,8 @@ import { SyncedService } from "../synced_service";
 import superagent from "superagent";
 import { TogglTimeEntry } from "../../models/synced_service/time_entry/toggl_time_entry";
 import { ServiceObject } from "../../models/synced_service/service_object/service_object";
+import { Mapping } from "../../models/mapping/mapping";
+import { MappingsObject } from "../../models/mapping/mappings_object";
 
 export class TogglTrackSyncedService implements SyncedService {
   private _serviceDefinition: ServiceDefinition;
@@ -58,12 +60,12 @@ export class TogglTrackSyncedService implements SyncedService {
     }
   }
 
-  async updateServiceObject(serviceObject: ServiceObject): Promise<ServiceObject> {
+  async updateServiceObject(objectId: string | number, serviceObject: ServiceObject): Promise<ServiceObject> {
     switch (serviceObject.type) {
       case this._projectsType:
-        return await this._updateProject(serviceObject);
+        return await this._updateProject(objectId, serviceObject);
       default:
-        return await this._updateTag(serviceObject);
+        return await this._updateTag(objectId, serviceObject);
     }
   }
 
@@ -73,6 +75,19 @@ export class TogglTrackSyncedService implements SyncedService {
         return await this._deleteProject(id);
       default:
         return await this._deleteTag(id);
+    }
+  }
+
+  getFullNameForServiceObject(serviceObject: ServiceObject): string {
+    switch (serviceObject.type) {
+      case this._projectsType:
+        return serviceObject.name;
+      case this._tagsType:
+        return serviceObject.name;
+      case 'issue':
+        return `#${serviceObject.id} ${serviceObject.name} (${serviceObject.type})`;
+      default:
+        return `${serviceObject.name} (${serviceObject.type})`;
     }
   }
 
@@ -117,11 +132,11 @@ export class TogglTrackSyncedService implements SyncedService {
     return new ServiceObject(response.body.data['id'], response.body.data['name'], this._projectsType);
   }
 
-  private async _updateProject(project: ServiceObject): Promise<ServiceObject> {
+  private async _updateProject(objectId: string | number, project: ServiceObject): Promise<ServiceObject> {
     const response = await superagent
-      .put(`${this._projectsUri}/${project.id}`)
+      .put(`${this._projectsUri}/${objectId}`)
       .auth(this._serviceDefinition.apiKey, 'api_token')
-      .send({ project: { name: project.name } });
+      .send({ project: { name: this.getFullNameForServiceObject(project) } });
 
     return new ServiceObject(response.body.data['id'], response.body.data['name'], this._projectsType);
   }
@@ -168,16 +183,16 @@ export class TogglTrackSyncedService implements SyncedService {
     const response = await superagent
       .post(this._tagsUri)
       .auth(this._serviceDefinition.apiKey, 'api_token')
-      .send({ tag: { name: `${objectType === 'issue' ? ('#' + objectId + ' ') : ''}${objectName} (${objectType})`, wid: this._serviceDefinition.config.workspaceId } });
+      .send({ tag: { name: this.getFullNameForServiceObject(new ServiceObject(objectId, objectName, objectType)), wid: this._serviceDefinition.config.workspaceId } });
 
     return new ServiceObject(response.body.data['id'], response.body.data['name'], this._tagsType);
   }
 
-  private async _updateTag(serviceObject: ServiceObject): Promise<ServiceObject> {
+  private async _updateTag(objectId: number | string, serviceObject: ServiceObject): Promise<ServiceObject> {
     const response = await superagent
-      .put(`${this._tagsUri}/${serviceObject.id}`)
+      .put(`${this._tagsUri}/${objectId}`)
       .auth(this._serviceDefinition.apiKey, 'api_token')
-      .send({ tag: { name: `${serviceObject.name} (${serviceObject.type})` } });
+      .send({ tag: { name: this.getFullNameForServiceObject(serviceObject) } });
 
     return new ServiceObject(response.body.data['id'], response.body.data['name'], this._tagsType);
   }
@@ -282,6 +297,39 @@ export class TogglTrackSyncedService implements SyncedService {
       .auth(this._serviceDefinition.apiKey, 'api_token');
 
     return response.ok;
+  }
+
+  /**
+   * Extracts project from timeEntry.project + issue and time entry activity etc from the tags
+   * @param timeEntry 
+   * @param mappings 
+   */
+  extractMappingsObjectsFromTimeEntry(timeEntry: TimeEntry, mappings: Mapping[]): MappingsObject[] {
+    // this should not happen
+    if (!(timeEntry instanceof TogglTimeEntry)) return [];
+
+    const mappingsObjectsResult: MappingsObject[] = [];
+    for (const mapping of mappings) {
+      // ===  'TogglTrack' (is stored in this._serviceDefinition.name)
+      const togglMappingsObject = mapping.mappingsObjects.find(mappingsObject => mappingsObject.service === this._serviceDefinition.name);
+
+      if (togglMappingsObject) {
+        // find project's mapping - should have same id as timeEntry.projectId
+        if (togglMappingsObject.id === timeEntry.projectId && togglMappingsObject.type === this._projectsType) {
+          const otherProjectMappingsObjects = mapping.mappingsObjects.filter(mappingsObject => mappingsObject.service !== this._serviceDefinition.name);
+          // push to result all other than 'TogglTrack'
+          mappingsObjectsResult.push(...otherProjectMappingsObjects);
+        } else if (togglMappingsObject.type !== this._projectsType && timeEntry.tags) {
+          // find other mappings in timeEntry's tags -> issues, time entry activity
+          if (timeEntry.tags.find(tag => tag === togglMappingsObject.name)) {
+            const otherProjectMappingsObjects = mapping.mappingsObjects.filter(mappingsObject => mappingsObject.service !== this._serviceDefinition.name);
+            // push to result all other than 'TogglTrack'
+            mappingsObjectsResult.push(...otherProjectMappingsObjects);
+          }
+        }
+      }
+    }
+    return mappingsObjectsResult;
   }
 
   // via reports

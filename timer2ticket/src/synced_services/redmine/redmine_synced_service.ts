@@ -5,6 +5,8 @@ import superagent from "superagent";
 import { ServiceObject } from "../../models/synced_service/service_object/service_object";
 import { RedmineTimeEntry } from "../../models/synced_service/time_entry/redmine_time_entry";
 import { Utilities } from "../../shared/utilities";
+import { MappingsObject } from "../../models/mapping/mappings_object";
+import { Mapping } from "../../models/mapping/mapping";
 
 export class RedmineSyncedService implements SyncedService {
   private _serviceDefinition: ServiceDefinition;
@@ -32,7 +34,7 @@ export class RedmineSyncedService implements SyncedService {
 
     this._projectsType = 'project';
     this._issuesType = 'issue';
-    this._timeEntryActivitiesType = 'time entry activity';
+    this._timeEntryActivitiesType = 'activity';
   }
 
   async getAllServiceObjects(): Promise<ServiceObject[]> {
@@ -63,6 +65,10 @@ export class RedmineSyncedService implements SyncedService {
   async deleteServiceObject(): Promise<boolean> {
     // TODO implement
     throw new Error("Method not implemented.");
+  }
+
+  getFullNameForServiceObject(serviceObject: ServiceObject): string {
+    return serviceObject.name;
   }
 
   // ***********************************************************
@@ -285,5 +291,33 @@ export class RedmineSyncedService implements SyncedService {
       .set('X-Redmine-API-Key', this._serviceDefinition.apiKey);
 
     return response.ok;
+  }
+
+  /**
+   * Extracts project, issue and time entry activity and returns them as mappingObjects
+   * @param timeEntry 
+   * @param mappings 
+   */
+  extractMappingsObjectsFromTimeEntry(timeEntry: TimeEntry, mappings: Mapping[]): MappingsObject[] {
+    // this should not happen
+    if (!(timeEntry instanceof RedmineTimeEntry)) return [];
+
+    const mappingsObjectsResult: MappingsObject[] = [];
+    for (const mapping of mappings) {
+      // ===  'Redmine' (is stored in this._serviceDefinition.name)
+      const redmineMappingsObject = mapping.mappingsObjects.find(mappingsObject => mappingsObject.service === this._serviceDefinition.name);
+
+      if (redmineMappingsObject) {
+        // find project's mapping - should have same id as timeEntry.projectId
+        if ((redmineMappingsObject.id === timeEntry.projectId && redmineMappingsObject.type === this._projectsType)
+          || (redmineMappingsObject.id === timeEntry.issueId && redmineMappingsObject.type === this._issuesType)
+          || (redmineMappingsObject.id === timeEntry.activityId && redmineMappingsObject.type === this._timeEntryActivitiesType)) {
+          const otherProjectMappingsObjects = mapping.mappingsObjects.filter(mappingsObject => mappingsObject.service !== this._serviceDefinition.name);
+          // push to result all other than 'Redmine'
+          mappingsObjectsResult.push(...otherProjectMappingsObjects);
+        }
+      }
+    }
+    return mappingsObjectsResult;
   }
 }

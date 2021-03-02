@@ -1,6 +1,5 @@
 import { ServiceDefinition } from "../models/service_definition/service_definition";
 import { TimeEntry } from "../models/synced_service/time_entry/time_entry";
-import { User } from "../models/user";
 import { Utilities } from "../shared/utilities";
 import { SyncedServiceCreator } from "../synced_services/synced_service_creator";
 import { SyncJob } from "./sync_job";
@@ -9,17 +8,14 @@ import { TimeEntrySyncedObject } from "../models/synced_service/time_entry_synce
 import { ServiceTimeEntryObject } from "../models/synced_service/time_entry_synced_object/service_time_entry_object";
 import { SyncedService } from "../synced_services/synced_service";
 import { ServiceObject } from "../models/synced_service/service_object/service_object";
-import { TimeEntryManagerCreator } from "../synced_services/time_entry_manager_creator";
 import { MappingsObject } from "../models/mapping/mappings_object";
 
-export class TimeEntriesSyncJob implements SyncJob {
+export class TimeEntriesSyncJob extends SyncJob {
   /**
    * This job takes all unsynced time entries from services and synces them across all other services
    * Synces time entries, that are identified with the user's mappings
-   * 
-   * @param user Given user, mappings should be there
    */
-  async doTheJob(user: User): Promise<boolean> {
+  async doTheJob(): Promise<boolean> {
     let now = new Date();
     const twoWeeksAgo = new Date(now.setDate(now.getDate() - 14));
     now = new Date();
@@ -27,8 +23,8 @@ export class TimeEntriesSyncJob implements SyncJob {
     // const start = Utilities.compare(user.registrated, twoWeeksAgo) > 0
     //   ? user.registrated
     //   : twoWeeksAgo;
-    const start = Utilities.compare(user.registrated, twoWeeksAgo) < 0
-      ? user.registrated
+    const start = Utilities.compare(this._user.registrated, twoWeeksAgo) < 0
+      ? this._user.registrated
       : twoWeeksAgo;
 
     // Need to load all time entries (TE) for each service
@@ -47,12 +43,13 @@ export class TimeEntriesSyncJob implements SyncJob {
     //    => delete from other services and delete TESO
     // e) TESO is there, but TE is missing in the non origin service
     //    => create new TE for the service
+
     // object wrapper for service and its timeEntries
     const serviceTimeEntriesWrappers: ServiceTimeEntriesWrapper[] = [];
     const serviceTimeEntriesWrappersMap: Map<string, ServiceTimeEntriesWrapper> = new Map();
 
     // for each service definition, request time entries and then for each other service definition, sync them
-    for (const serviceDefinition of user.serviceDefinitions) {
+    for (const serviceDefinition of this._user.serviceDefinitions) {
       const syncedService = SyncedServiceCreator.create(serviceDefinition);
       const serviceTimeEntriesWrapper = new ServiceTimeEntriesWrapper(
         serviceDefinition,
@@ -67,7 +64,7 @@ export class TimeEntriesSyncJob implements SyncJob {
     const timeEntrySyncedObjectWrappers: TimeEntrySyncedObjectWrapper[] = [];
 
     // get all TESOs from DB for user
-    const timeEntrySyncedObjects = await databaseService.getTimeEntrySyncedObjects(user);
+    const timeEntrySyncedObjects = await databaseService.getTimeEntrySyncedObjects(this._user);
 
     if (!timeEntrySyncedObjects) return false;
 
@@ -115,8 +112,8 @@ export class TimeEntriesSyncJob implements SyncJob {
           const otherServiceTimeEntriesWrappers = serviceTimeEntriesWrappers
             .filter(stew => stew.serviceDefinition.name !== serviceTimeEntriesWrapper.serviceDefinition.name);
 
-          console.log('a)');
-          const newTimeEntrySyncedObject = await this._createTimeEntrySyncedObject(user, serviceTimeEntriesWrapper, otherServiceTimeEntriesWrappers, timeEntry);
+          console.log('TESyncJob: a)');
+          const newTimeEntrySyncedObject = await this._createTimeEntrySyncedObject(serviceTimeEntriesWrapper, otherServiceTimeEntriesWrappers, timeEntry);
           if (newTimeEntrySyncedObject) {
             // no need to await DB changes
             databaseService.createTimeEntrySyncedObject(newTimeEntrySyncedObject);
@@ -127,7 +124,7 @@ export class TimeEntriesSyncJob implements SyncJob {
 
     // other scenarios b), c), d), e)
     for (const timeEntrySyncedObjectWrapper of timeEntrySyncedObjectWrappers) {
-      if (await this._checkTimeEntrySyncedObject(user, timeEntrySyncedObjectWrapper)) {
+      if (await this._checkTimeEntrySyncedObject(timeEntrySyncedObjectWrapper)) {
         // some changes probably were made to TESO object, update it in db
         // no need to await DB changes
         databaseService.updateTimeEntrySyncedObject(timeEntrySyncedObjectWrapper.timeEntrySyncedObject);
@@ -138,19 +135,18 @@ export class TimeEntriesSyncJob implements SyncJob {
   }
 
   private async _createTimeEntrySyncedObject(
-    user: User,
     timeEntryOriginServiceWrapper: ServiceTimeEntriesWrapper,
     otherServiceTimeEntriesWrappers: ServiceTimeEntriesWrapper[],
     timeEntry: TimeEntry)
     : Promise<TimeEntrySyncedObject | undefined> {
-    const newTimeEntrySyncedObjectResult = new TimeEntrySyncedObject(user._id);
+    const newTimeEntrySyncedObjectResult = new TimeEntrySyncedObject(this._user._id);
 
     // firstly, push origin service (from which time entry came from)
     newTimeEntrySyncedObjectResult.serviceTimeEntryObjects.push(
       new ServiceTimeEntryObject(timeEntry.id, timeEntryOriginServiceWrapper.serviceDefinition.name, true)
     );
 
-    const otherServicesMappingsObjects = TimeEntryManagerCreator.create(timeEntryOriginServiceWrapper.serviceDefinition).extractMappingsObjectsFromTimeEntry(timeEntry, user.mappings);
+    const otherServicesMappingsObjects = timeEntryOriginServiceWrapper.syncedService.extractMappingsObjectsFromTimeEntry(timeEntry, this._user.mappings);
 
     for (const otherServiceDefinition of otherServiceTimeEntriesWrappers) {
       await this._createTimeEntryBasedOnTimeEntryModelAndServiceDefinition(
@@ -177,7 +173,6 @@ export class TimeEntriesSyncJob implements SyncJob {
    * @param timeEntrySyncedObjectWrapper 
    */
   private async _checkTimeEntrySyncedObject(
-    user: User,
     timeEntrySyncedObjectWrapper: TimeEntrySyncedObjectWrapper)
     : Promise<boolean> {
     // firstly, find origin service
@@ -205,15 +200,14 @@ export class TimeEntriesSyncJob implements SyncJob {
       if (!lastUpdatedServiceTimeEntryObjectWrapper.timeEntry) return false;
 
 
-      const otherServicesMappingsObjects = TimeEntryManagerCreator
-        .create(lastUpdatedServiceTimeEntryObjectWrapper.serviceDefinition)
-        .extractMappingsObjectsFromTimeEntry(lastUpdatedServiceTimeEntryObjectWrapper.timeEntry, user.mappings);
+      const otherServicesMappingsObjects = lastUpdatedServiceTimeEntryObjectWrapper.syncedService
+        .extractMappingsObjectsFromTimeEntry(lastUpdatedServiceTimeEntryObjectWrapper.timeEntry, this._user.mappings);
 
       if (timeEntrySyncedObjectWrapper.timeEntrySyncedObject.lastUpdated < new Date(lastUpdatedServiceTimeEntryObjectWrapper.timeEntry.lastUpdated).getTime()) {
         // scenario b1) + possibly c) or e)
         // somewhere it is updated => need to update all other services
         // solution is: delete TEs from all other services and then propagate to scenario e) below
-        console.log('b1)');
+        console.log('TESyncJob: b1)');
 
         // loop through all STEOs (except that which TE is updated last)
         for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
@@ -227,7 +221,7 @@ export class TimeEntriesSyncJob implements SyncJob {
       } else {
         // scenario b2) + possibly c) or e)
         // seems ok for now, try if it is not c) or e) too
-        console.log('b2)');
+        console.log('TESyncJob: b2)');
       }
 
       for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
@@ -235,7 +229,7 @@ export class TimeEntriesSyncJob implements SyncJob {
           // scenario e), STEO is there, but TE is missing (it could be both origin or non origin)
           // why it could be origin? Only from b1) above, if user deleted it himself, it would go to scenario d) below
           // need to create new TE (based on lastUpdatedServiceTimeEntryObjectWrapper.timeEntry)
-          console.log('e)');
+          console.log('TESyncJob: e)');
 
           // delete current STEO from the TESO
           const index = timeEntrySyncedObjectWrapper.timeEntrySyncedObject.serviceTimeEntryObjects.indexOf(serviceTimeEntryObjectWrapper.serviceTimeEntryObject);
@@ -252,13 +246,13 @@ export class TimeEntriesSyncJob implements SyncJob {
         }
       }
 
-      for (const serviceDefinition of user.serviceDefinitions) {
+      for (const serviceDefinition of this._user.serviceDefinitions) {
         const serviceTimeEntryObjectWrapper = timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers.find(steow => steow.serviceDefinition.name === serviceDefinition.name);
         if (!serviceTimeEntryObjectWrapper) {
           // service is missing (probably new one was added recently) => scenario c)
           // create new TE for given service, then create new STEO and add to TESO
           // TE should be created based on lastUpdatedServiceTimeEntryObjectWrapper.timeEntry
-          console.log('c)');
+          console.log('TESyncJob: c)');
 
           await this._createTimeEntryBasedOnTimeEntryModelAndServiceDefinition(
             otherServicesMappingsObjects,
@@ -270,13 +264,13 @@ export class TimeEntriesSyncJob implements SyncJob {
       }
     } else {
       // scenario d)
-      console.log('d)');
+      console.log('TESyncJob: d)');
       let allDeleted = true;
       for (const serviceTimeEntryObjectWrapper of timeEntrySyncedObjectWrapper.serviceTimeEntryObjectWrappers) {
         // not from origin (TE is already not there)
         if (serviceTimeEntryObjectWrapper !== originServiceTimeEntryObjectWrapper) {
           allDeleted &&= await serviceTimeEntryObjectWrapper.syncedService.deleteTimeEntry(serviceTimeEntryObjectWrapper.serviceTimeEntryObject.id);
-          console.log(`deleted TE from the ${serviceTimeEntryObjectWrapper.serviceDefinition.name} with id = ${serviceTimeEntryObjectWrapper.serviceTimeEntryObject.id}`);
+          console.log(`TESyncJob: deleted TE from the ${serviceTimeEntryObjectWrapper.serviceDefinition.name} with id = ${serviceTimeEntryObjectWrapper.serviceTimeEntryObject.id}`);
         }
       }
       if (allDeleted) {

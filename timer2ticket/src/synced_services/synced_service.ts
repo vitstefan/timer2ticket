@@ -1,6 +1,7 @@
+import { Mapping } from "../models/mapping/mapping";
+import { MappingsObject } from "../models/mapping/mappings_object";
 import { ServiceObject } from "../models/synced_service/service_object/service_object";
 import { TimeEntry } from "../models/synced_service/time_entry/time_entry";
-import { TimeEntryManagerCreator } from "./time_entry_manager_creator";
 
 export interface SyncedService {
   /**
@@ -30,11 +31,18 @@ export interface SyncedService {
    * Update service object like project, issue, tag and activity in the service, and return updated one
    * Used generally to update the object's name
    * Typically with name '[objectName] ([objectType])'
-   * @param serviceObject object to update
+   * @param objectId id of object to update
+   * @param serviceObject serviceObject based on real object in primary service to extract name and possibly type for
    */
-  updateServiceObject(serviceObject: ServiceObject): Promise<ServiceObject>;
+  updateServiceObject(objectId: string | number, serviceObject: ServiceObject): Promise<ServiceObject>;
 
   deleteServiceObject(id: string | number, objectType: string): Promise<boolean>;
+
+  /**
+   * Generates full name for given service object (Toggl, for example, generates names for tags as 'name (type)' or if issue, then '#id name (type)')
+   * @param serviceObject 
+   */
+  getFullNameForServiceObject(serviceObject: ServiceObject): string;
 
   /**
    * getTimeEntries
@@ -56,4 +64,11 @@ export interface SyncedService {
    * @param id of the time entry to delete from the service
    */
   deleteTimeEntry(id: string | number): Promise<boolean>;
+
+  /**
+   * Extracts objects from specific timeEntry, e.g. toggl extracts projectId from projectId, issue and time entry activity from TE's tags
+   * @param timeEntry timeEntry object from which mappingsObjects are extracting - each specific manager has its specific time entry instance (e.g. TogglTimeEntry)
+   * @param mappings user's mappings where to find mappingsObjects (by id)
+   */
+  extractMappingsObjectsFromTimeEntry(timeEntry: TimeEntry, mappings: Mapping[]): MappingsObject[];
 }

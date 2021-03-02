@@ -8,7 +8,7 @@ export class User {
   username!: string;
   password!: string;
   registrated!: Date;
-  state!: string;
+  status!: string;
   configSyncJobDefinition!: JobDefinition;
   timeEntrySyncJobDefinition!: JobDefinition;
   serviceDefinitions: ServiceDefinition[] = [];

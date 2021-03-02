@@ -64,6 +64,13 @@ export class DatabaseService {
     return this._usersCollection.findOne(filterQuery);
   }
 
+  async getActiveUsers(): Promise<User[]> {
+    if (!this._usersCollection) return [];
+
+    const filterQuery = { status: 'active' };
+    return this._usersCollection.find(filterQuery).toArray();
+  }
+
   async updateUser(user: User): Promise<User | null> {
     if (!this._usersCollection) return null;
 
