@@ -57,7 +57,14 @@ export class DatabaseService {
   // USERS *****************************************************
   // ***********************************************************
 
-  async getUser(username: string): Promise<User | null> {
+  async getUserById(userId: string): Promise<User | null> {
+    if (!this._usersCollection) return null;
+
+    const filterQuery = { _id: new ObjectId(userId) };
+    return this._usersCollection.findOne(filterQuery);
+  }
+
+  async getUserByUsername(username: string): Promise<User | null> {
     if (!this._usersCollection) return null;
 
     const filterQuery = { username: username };

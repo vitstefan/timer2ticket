@@ -14,10 +14,10 @@
     "@types/mongodb": "^3.6.7",
     "@types/node-cron": "^2.0.3",
     "@types/superagent": "^4.1.10",
-    "@types/whatwg-url": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^4.15.0",
     "@typescript-eslint/parser": "^4.15.0",
     "eslint": "^7.20.0",
+    "tsc-watch": "^4.2.9",
     "typescript": "^4.1.5"
   },
   "dependencies": {
@@ -25,7 +25,6 @@
     "mongodb": "^3.6.4",
     "node-cron": "^2.0.3",
     "superagent": "^6.1.0",
-    "tsc-watch": "^4.2.9",
     "typescript-collections": "^1.3.3"
   }
 }

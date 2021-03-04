@@ -21,6 +21,9 @@ const jobQueue = new Queue<SyncJob>();
 const activeUsersScheduledConfigSyncTasks = new Map<string, cron.ScheduledTask>();
 const activeUsersScheduledTimeEntriesSyncTasks = new Map<string, cron.ScheduledTask>();
 
+// TODO cleanUpJob - removes old projects, issues etc.
+// TODO test project config
+
 // every second check if jobQueue is not empty
 cron.schedule('0-59 * * * * *', () => {
   while (!jobQueue.isEmpty()) {
@@ -29,48 +32,21 @@ cron.schedule('0-59 * * * * *', () => {
     if (job) {
       console.log(' -> Do the job');
       job.doTheJob().then(res => {
-        if (!res) {
+        if (res) {
+          console.log(' -> Job successfully done.');
+        } else {
           // not successful, try to add again to the queue
-          console.log(' -> Added job again');
-          jobQueue.enqueue(job);
+          // TODO uncomment, but be careful with it
+          // do not want to be in the cycle => return to queue only twice or something...
+          // console.log(' -> Added job again');
+          // jobQueue.enqueue(job);
         }
       });
     }
   }
 });
 
-app.get('/', async (req, res) => {
-  res.send('OK.');
-});
-
-app.post('/api/config', async (req, res) => {
-  const username = req.body['username'];
-  // config probably changed 
-  // => stop all scheduled cron tasks 
-  // => get updated user from DB 
-  // => start jobs again
-
-  const configTask = activeUsersScheduledConfigSyncTasks.get(username);
-  if (configTask) {
-    configTask.destroy();
-  }
-
-  const timeEntriesTask = activeUsersScheduledTimeEntriesSyncTasks.get(username);
-  if (timeEntriesTask) {
-    timeEntriesTask.destroy();
-  }
-
-  const user = await databaseService.getUser(username);
-  if (user) {
-    // schedule CSJ right now
-    jobQueue.enqueue(new ConfigSyncJob(user));
-    // and schedule next CSJs and TESJs by the user's normal schedule
-    scheduleJobs(user);
-  }
-
-  return res.send('User\'s jobs restarted successfully.');
-});
-
+// App init
 app.listen(Constants.appPort, async () => {
   await databaseService.init();
 
@@ -83,13 +59,85 @@ app.listen(Constants.appPort, async () => {
   return console.log(`Server is listening on ${Constants.appPort}`);
 });
 
+// Schedule jobs for given user
+app.post('/api/start/:userId([a-zA-Z0-9]{24})', async (req, res) => {
+  const userId = req.params.userId;
+  // config probably changed 
+  // => stop all scheduled cron tasks 
+  // => get updated user from DB 
+  // => start jobs again
+
+  const configTask = activeUsersScheduledConfigSyncTasks.get(userId);
+  if (configTask) {
+    configTask.destroy();
+  }
+
+  const timeEntriesTask = activeUsersScheduledTimeEntriesSyncTasks.get(userId);
+  if (timeEntriesTask) {
+    timeEntriesTask.destroy();
+  }
+
+  const user = await databaseService.getUserById(userId);
+
+  if (!user) {
+    return res.sendStatus(404);
+  }
+
+  // schedule CSJ right now
+  jobQueue.enqueue(new ConfigSyncJob(user));
+  // and schedule next CSJs and TESJs by the user's normal schedule
+  scheduleJobs(user);
+
+  return res.send('User\'s jobs started successfully.');
+});
+
+// Stop all jobs for given user
+app.post('/api/stop/:userId([a-zA-Z0-9]{24})', async (req, res) => {
+  const userId = req.params.userId;
+  // config probably changed 
+  // => stop all scheduled cron tasks
+
+  const configTask = activeUsersScheduledConfigSyncTasks.get(userId);
+  const timeEntriesTask = activeUsersScheduledTimeEntriesSyncTasks.get(userId);
+
+  if (!configTask && !timeEntriesTask) {
+    return res.status(404).send('No jobs found for this user.');
+  }
+
+  if (configTask) {
+    configTask.destroy();
+  }
+  if (timeEntriesTask) {
+    timeEntriesTask.destroy();
+  }
+
+  return res.send('User\'s jobs stopped successfully.');
+});
+
+// Returns 204 if both config and TE jobs are scheduled for given user
+app.post('/api/scheduled/:userId([a-zA-Z0-9]{24})', async (req, res) => {
+  const userId = req.params.userId;
+
+  const configTask = activeUsersScheduledConfigSyncTasks.get(userId);
+  const timeEntriesTask = activeUsersScheduledTimeEntriesSyncTasks.get(userId);
+
+  if (configTask && timeEntriesTask) {
+    return res.send({ scheduled: true });
+  }
+
+  // return 200 OK if jobs are not scheduled (technically not error or something)
+  return res.send({ scheduled: false });
+});
+
 function scheduleJobs(user: User) {
+  console.log(`SCHEDULE jobs for user ${user._id}`);
+
   if (cron.validate(user.configSyncJobDefinition.schedule)) {
     const task = cron.schedule(user.configSyncJobDefinition.schedule, () => {
       console.log(' -> Added ConfigSyncJob');
       jobQueue.enqueue(new ConfigSyncJob(user));
     });
-    activeUsersScheduledConfigSyncTasks.set(user.username, task);
+    activeUsersScheduledConfigSyncTasks.set(user._id.toString(), task);
   }
 
   if (cron.validate(user.timeEntrySyncJobDefinition.schedule)) {
@@ -97,6 +145,6 @@ function scheduleJobs(user: User) {
       console.log(' -> Added TESyncJob');
       jobQueue.enqueue(new TimeEntriesSyncJob(user));
     });
-    activeUsersScheduledTimeEntriesSyncTasks.set(user.username, task);
+    activeUsersScheduledTimeEntriesSyncTasks.set(user._id.toString(), task);
   }
 }
