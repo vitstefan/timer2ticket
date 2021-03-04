@@ -53,18 +53,25 @@ export class DatabaseService {
   // USERS *****************************************************
   // ***********************************************************
 
-  async getUser(username: string): Promise<User | null> {
+  async getUserById(userId: string): Promise<User | null> {
+    if (!this._usersCollection) return null;
+
+    const filterQuery = { _id: new ObjectId(userId) };
+    return this._usersCollection.findOne(filterQuery);
+  }
+
+  async getUserByUsername(username: string): Promise<User | null> {
     if (!this._usersCollection) return null;
 
     const filterQuery = { username: username };
     return this._usersCollection.findOne(filterQuery);
   }
 
-  async getActiveUsers(): Promise<User[]> {
-    if (!this._usersCollection) return [];
+  async createUser(username: string, passwordHash: string): Promise<User | null> {
+    if (!this._usersCollection) return null;
 
-    const filterQuery = { status: 'active' };
-    return this._usersCollection.find(filterQuery).toArray();
+    const result = await this._usersCollection.insertOne(User.default(username, passwordHash));
+    return result.result.ok === 1 ? result.ops[0] : null;
   }
 
   async updateUser(user: User): Promise<User | null> {
