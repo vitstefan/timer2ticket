@@ -1,0 +1,8 @@
+.above-h1-text {
+  font-family: Montserrat Light, Arial, sans-serif;
+  color: var(--text-color);
+  padding-top: 1.8em;
+  font-size: clamp(1em, 4vw, 1.7em);
+  text-align: center;
+  line-height: 1.2;
+}

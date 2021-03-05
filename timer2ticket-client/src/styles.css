@@ -1,0 +1,269 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+  --background: #EEE0FF;
+  --text-color: #381276;
+  --action-color: #D6BCF6;
+  --header-color: var(--action-color);
+  --disabled-background: #E1D2FF;
+  --disabled-color: #AB86D8;
+  --notifs-background-color: var(--action-color);
+  --notifs-content-color: var(--text-color);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body, main {
+  /* height: calc(100% - 2.2em); */
+}
+
+body {
+  font-family: Montserrat, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: var(--text-color);
+  background: var(--background);
+}
+
+header {
+  position: fixed;
+  height: calc(1.0em + 3.1vw);
+  background: var(--header-color);
+  z-index: 99;
+  width: 100vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 1em;
+  padding-right: 1em;
+  font-family: Montserrat Medium, Arial, sans-serif;
+  font-size: 2em;
+  box-shadow: 0px 1px 8px -2px var(--text-color);
+  -moz-box-shadow: 0px 1px 8px -2px var(--text-color);
+  -webkit-box-shadow: 0px 1px 8px -2px var(--text-color);
+}
+
+.mat-h1, .mat-headline, .mat-typography h1 {
+  padding-top: 1.4em;
+  padding-bottom: 1.4em;
+  font-family: Montserrat Medium, Arial, sans-serif;
+  font-size: clamp(2em, 10vw, 4.5em);
+}
+
+label {
+  font-family: Montserrat, Arial, Sans Serif;
+  font-size: calc(0.6em + 1.1vw);
+  color: var(--text-color);
+}
+
+label .mat-checkbox-label {
+  font-size: calc(0.3em + 0.7vw);
+}
+
+button, input {
+  border-radius: 50px;
+  font-family: Montserrat, Arial, Sans Serif;
+  font-size: calc(0.3em + 1.3vw);
+  margin-top: 0.2em;
+  margin-bottom: 1em;
+  color: var(--text-color);
+  transition: all .2s linear;
+  padding: 0.5em;
+}
+
+button {
+  background-color: var(--action-color);
+  border: 1px solid var(--action-color);
+  width: 90%;
+  height: 3em;
+  box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
+  -moz-box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
+  -webkit-box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
+  transition: all .2s linear;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  background-color: var(--disabled-background);
+  color: var(--disabled-color);
+}
+
+input {
+  border: 3px solid var(--text-color);
+  background-color: var(--background);
+  /* text-indent: 2.0vh; */
+  text-align: center;
+  width: 70%;
+}
+
+.element-hint-below {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.7em;
+  width: 70%;
+}
+
+.element-hint-below input {
+  width: 100%;
+  margin-bottom: 0.3em;
+}
+
+.element-hint-below span {
+  font-family: Montserrat, Arial, Sans Serif;
+  font-size: 0.85em;
+}
+
+a {
+  font-family: Montserrat, Arial, Sans Serif;
+  font-size: calc(0.5em + 0.7vw);
+  text-decoration: none;
+  text-align: center;
+  height: unset;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.content-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50vw;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(1em, 4vh, 1.5em);
+  width: clamp(20em, 30vw, 35em)
+}
+
+.filters-actions-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(1em, 4vh, 1.5em);
+  padding-top: 1em;
+  padding-bottom: 2em;
+}
+
+.filters-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(1em, 4vh, 1.5em);
+  padding-top: 2.0em;
+  padding-bottom: 1.0em;
+  background-color: #fafafa;
+}
+
+@media only screen and (max-width: 660px) {
+  .filters-container {
+    flex-direction: column;
+  }
+  .content-centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 70vw;
+  }
+}
+
+@media only screen and (max-width: 440px) {
+  nav {
+    gap: 0.4em;
+  }
+  form {
+    gap: 0.7em;
+    width: 90vw;
+  }
+  .content-centered {
+    width: 90vw;
+  }
+}
+
+.auth-container {
+  min-width: 100vw;
+  min-height: calc(100% - 4.4em);
+  display: flex;
+  justify-content: center;
+  padding-top: 5.2em;
+}
+
+.rotate-180-deg {
+  transform: rotate(180deg);
+}
+
+.centered {
+  display: flex;
+  justify-content: center;
+}
+
+.icon-large {
+  font-size: xx-large;
+}
+
+/* Some Material elements redefined (or styles added) */
+
+.mat-dialog-actions {
+  justify-content: flex-end;
+  gap: 1em;
+}
+
+div.mat-form-field-wrapper {
+  padding-bottom: unset;
+}
+
+button.menu-button {
+  position: fixed;
+  top: 3.2em;
+  right: 1.0em;
+}
+
+button.floating-action-button {
+  position: fixed;
+  bottom: clamp(1.3em, 7vmin, 5em);
+  right: clamp(1.3em, 7vmin, 5em);
+}
+
+button.button-done {
+  padding-top: 0.6em;
+  padding-bottom: 0.6em;
+  margin-bottom: clamp(1em, 4vh, 1.5em);
+}
+
+button.button-share {
+  margin-bottom: clamp(1em, 4vh, 1.5em);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
