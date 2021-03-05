@@ -91,6 +91,7 @@
     padding: unset;
     font-size: var(--notifs-content-size);
     color: var(--notifs-content-color);
+    font-family: Montserrat, Arial, Sans Serif;
 }
 
 .notifs-content-type-1 {

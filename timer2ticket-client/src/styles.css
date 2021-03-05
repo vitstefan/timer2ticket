@@ -27,45 +27,48 @@ body {
   background: var(--background);
 }
 
-header {
-  position: fixed;
-  height: calc(1.0em + 3.1vw);
-  background: var(--header-color);
-  z-index: 99;
-  width: 100vw;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-left: 1em;
-  padding-right: 1em;
-  font-family: Montserrat Medium, Arial, sans-serif;
-  font-size: 2em;
-  box-shadow: 0px 1px 8px -2px var(--text-color);
-  -moz-box-shadow: 0px 1px 8px -2px var(--text-color);
-  -webkit-box-shadow: 0px 1px 8px -2px var(--text-color);
-}
-
 .mat-h1, .mat-headline, .mat-typography h1 {
   padding-top: 1.4em;
   padding-bottom: 1.4em;
   font-family: Montserrat Medium, Arial, sans-serif;
   font-size: clamp(2em, 10vw, 4.5em);
+  text-align: center;
+}
+
+.mat-h2, .mat-title, .mat-typography h2 {
+  padding-bottom: 1.3em;
+  font-family: Montserrat Medium, Arial, sans-serif;
+  font-size: clamp(1.5em, 6vw, 2.3em);
+  text-align: center;
+}
+
+.mat-h3, .mat-subheading-2, .mat-typography h3 {
+  padding-bottom: 1.0em;
+  font-family: Montserrat, Arial, sans-serif;
+  font-size: 1.9em;
+  text-align: center;
+}
+
+p {
+  font-family: Montserrat, Arial, sans-serif;
+  font-size: 1.3em;
+  text-align: center;
 }
 
 label {
   font-family: Montserrat, Arial, Sans Serif;
-  font-size: calc(0.6em + 1.1vw);
+  font-size: calc(0.7em + 1.05vw);
   color: var(--text-color);
 }
 
 label .mat-checkbox-label {
-  font-size: calc(0.3em + 0.7vw);
+  font-size: calc(0.6em + 0.3vw);
 }
 
 button, input {
   border-radius: 50px;
   font-family: Montserrat, Arial, Sans Serif;
-  font-size: calc(0.3em + 1.3vw);
+  font-size: calc(0.7em + 0.9vw);
   margin-top: 0.2em;
   margin-bottom: 1em;
   color: var(--text-color);
@@ -86,6 +89,7 @@ button {
   justify-content: center;
   align-items: center;
   gap: 0.5em;
+  cursor: pointer;
 }
 
 button:disabled {
@@ -118,12 +122,13 @@ input {
 
 .element-hint-below span {
   font-family: Montserrat, Arial, Sans Serif;
-  font-size: 0.85em;
+  font-size: calc(0.5em + 0.6vw);
+  text-align: center;
 }
 
 a {
   font-family: Montserrat, Arial, Sans Serif;
-  font-size: calc(0.5em + 0.7vw);
+  font-size: calc(0.7em + 0.9vw);
   text-decoration: none;
   text-align: center;
   height: unset;
@@ -133,11 +138,21 @@ a {
   gap: 0.5em;
 }
 
+.content-container {
+  min-width: 100vw;
+  min-height: calc(100% - 4.4em);
+  display: flex;
+  justify-content: center;
+  /* at least same as header => height: calc(1.3em + 1.6vw); */
+  padding-top: calc(2.8em + 1.6vw);
+}
+
 .content-centered {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 50vw;
+  padding-bottom: 5em;
 }
 
 form {
@@ -146,32 +161,10 @@ form {
   justify-content: center;
   align-items: center;
   gap: clamp(1em, 4vh, 1.5em);
-  width: clamp(20em, 30vw, 35em)
+  width: clamp(28em, 30vw, 38em)
 }
 
-.filters-actions-container {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  gap: clamp(1em, 4vh, 1.5em);
-  padding-top: 1em;
-  padding-bottom: 2em;
-}
-
-.filters-container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: clamp(1em, 4vh, 1.5em);
-  padding-top: 2.0em;
-  padding-bottom: 1.0em;
-  background-color: #fafafa;
-}
-
-@media only screen and (max-width: 660px) {
+@media only screen and (max-width: 880px) {
   .filters-container {
     flex-direction: column;
   }
@@ -196,12 +189,9 @@ form {
   }
 }
 
-.auth-container {
-  min-width: 100vw;
-  min-height: calc(100% - 4.4em);
-  display: flex;
-  justify-content: center;
-  padding-top: 5.2em;
+.mat-dialog-container {
+  background: var(--background);
+  color: var(--text-color);
 }
 
 .rotate-180-deg {
@@ -214,56 +204,13 @@ form {
 }
 
 .icon-large {
-  font-size: xx-large;
+  font-size: x-large;
 }
 
-/* Some Material elements redefined (or styles added) */
-
-.mat-dialog-actions {
-  justify-content: flex-end;
-  gap: 1em;
+button:not(.disabled):hover, a:hover, input[type="button"]:hover {
+  transform: scale(1.02, 1.02);
 }
 
-div.mat-form-field-wrapper {
-  padding-bottom: unset;
-}
-
-button.menu-button {
-  position: fixed;
-  top: 3.2em;
-  right: 1.0em;
-}
-
-button.floating-action-button {
-  position: fixed;
-  bottom: clamp(1.3em, 7vmin, 5em);
-  right: clamp(1.3em, 7vmin, 5em);
-}
-
-button.button-done {
-  padding-top: 0.6em;
-  padding-bottom: 0.6em;
-  margin-bottom: clamp(1em, 4vh, 1.5em);
-}
-
-button.button-share {
-  margin-bottom: clamp(1em, 4vh, 1.5em);
-}
-
-html, body {
-  height: 100%;
-}
-
-body {
-  margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-}
-
-html, body {
-  height: 100%;
-}
-
-body {
-  margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+button:not(.disabled):active, input[type="button"]:active {
+  transform: scale(0.95, 0.95);
 }

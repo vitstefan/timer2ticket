@@ -11,7 +11,7 @@ export class AuthGuard implements CanActivate {
 
     //inspiration: http://jasonwatmore.com/post/2018/11/16/angular-7-jwt-authentication-example-tutorial#jwt-interceptor-ts
     canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-        if (this.appData.getUser()) {
+        if (this.appData.userValue) {
             return true; //logged in so return true
         }
         //not logged in so redirect to login page with the return url

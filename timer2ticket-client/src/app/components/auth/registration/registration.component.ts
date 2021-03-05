@@ -17,7 +17,7 @@ export class RegistrationComponent implements OnDestroy {
     passwordAgain: '',
   };
 
-  private _$isRegistrationOkSubscription: Subscription;
+  private $_isRegistrationOkSubscription: Subscription;
 
   constructor(
     private _registrationService: RegistrationService,
@@ -26,16 +26,14 @@ export class RegistrationComponent implements OnDestroy {
   ) { }
 
   ngOnDestroy(): void {
-    if (this._$isRegistrationOkSubscription) {
-      this._$isRegistrationOkSubscription.unsubscribe();
-    }
+    this.$_isRegistrationOkSubscription?.unsubscribe();
   }
 
   registrate(): void {
     if (this.preRegistratedUser.password !== this.preRegistratedUser.passwordAgain) {
       this.app.buildNotification('Passwords are not same.');
     } else {
-      this._$isRegistrationOkSubscription = this._registrationService.registrate(
+      this.$_isRegistrationOkSubscription = this._registrationService.registrate(
         this.preRegistratedUser.username,
         this.preRegistratedUser.password,
         this.preRegistratedUser.passwordAgain,

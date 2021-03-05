@@ -1,6 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { AppComponent } from './app.component';
 import { UserService } from './services/user.service';
@@ -16,8 +16,14 @@ import { MaterialModule } from './material/material.module';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { RegistrationService } from './services/registration.service';
 import { AuthenticationService } from './services/authentication.service';
-import { ServicesChooseComponent } from './components/main-view/services-choose/services-choose.component';
-
+import { ServicesChooseComponent } from './components/config-steps/services-choose/services-choose.component';
+import { OverviewComponent } from './components/overview/overview.component';
+import { RedmineConfigurationComponent } from './components/config-steps/redmine-configuration/redmine-configuration.component';
+import { TogglTrackConfigurationComponent } from './components/config-steps/toggl-track-configuration/toggl-track-configuration.component';
+import { ScheduleComponent } from './components/config-steps/schedule/schedule.component';
+import { ConfirmationComponent } from './components/config-steps/confirmation/confirmation.component';
+import { HttpHeaderInterceptor } from './interceptors/http-header.interceptor';
+import { HttpErrorInterceptor } from './interceptors/http-error.interceptor';
 
 @NgModule({
   declarations: [
@@ -27,6 +33,11 @@ import { ServicesChooseComponent } from './components/main-view/services-choose/
     RegistrationComponent,
     ConfirmDialogComponent,
     ServicesChooseComponent,
+    OverviewComponent,
+    RedmineConfigurationComponent,
+    TogglTrackConfigurationComponent,
+    ScheduleComponent,
+    ConfirmationComponent,
   ],
   imports: [
     CommonModule,
@@ -39,6 +50,8 @@ import { ServicesChooseComponent } from './components/main-view/services-choose/
     HttpClientModule,
   ],
   providers: [
+    { provide: HTTP_INTERCEPTORS, useClass: HttpHeaderInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: HttpErrorInterceptor, multi: true },
     AppData,
     RegistrationService,
     AuthenticationService,

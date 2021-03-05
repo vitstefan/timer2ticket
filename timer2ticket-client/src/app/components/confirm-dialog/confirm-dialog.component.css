@@ -1,0 +1,16 @@
+.dialog-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  gap: 3.5em;
+  padding-top: 3em;
+}
+
+.dialog-actions button {
+  width: 35%;
+  height: 2em;
+}
+
+h3 {
+  padding-top: 1em;
+}

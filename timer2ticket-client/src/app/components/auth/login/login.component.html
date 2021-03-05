@@ -1,4 +1,4 @@
-<div class="auth-container">
+<div class="content-container">
   <div class="content-centered">
     <p class="above-h1-text">Synchronize time tracking applications with project management tools automatically in just
       a few steps</p>
@@ -19,8 +19,8 @@
         [(ngModel)]="rememberCredentials" (ngModelChange)="changeRememberCredentials()">Remember credentials?
       </mat-checkbox>
       <button type="submit" (click)="authenticate()" [disabled]="!email.valid || !password.valid">
-        Log in <mat-icon>login</mat-icon></button>
-      <a [routerLink]='["/registration"]'>New user? Registrate <mat-icon>how_to_reg</mat-icon></a>
+        Log in <mat-icon fontSet="material-icons-outlined">login</mat-icon></button>
+      <a [routerLink]='["/registration"]'>New user? Registrate <mat-icon fontSet="material-icons-outlined">how_to_reg</mat-icon></a>
     </form>
   </div>
 </div>

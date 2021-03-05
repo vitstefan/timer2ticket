@@ -5,9 +5,15 @@ import { Config } from "./config/config";
  * Service dependent definitions are stored in config
  */
 export class ServiceDefinition {
-  id!: string;
   name!: string;
   apiKey!: string;
   isPrimary!: boolean;
   config!: Config;
+
+  constructor(name: string, isPrimary?: boolean) {
+    this.name = name;
+    this.apiKey = '';
+    this.isPrimary = isPrimary ?? false;
+    this.config = null;
+  }
 }

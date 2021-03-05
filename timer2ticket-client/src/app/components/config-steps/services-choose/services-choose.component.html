@@ -1,0 +1,21 @@
+<div class="content-container">
+  <div class="content-centered">
+    <h1 class="custom-h1">1 / {{ stepsCount }}</h1>
+    <h2 class="custom-h2">Choose at least 2 services to sync</h2>
+    <form>
+      <div class="services-container">
+        <button *ngFor="let service of servicesToChooseList" type="button" (click)="chooseService(service)">
+          <strong *ngIf="service.isChosen">{{ service.name }}</strong>
+          <ng-container *ngIf="!service.isChosen">{{ service.name }}</ng-container>
+          <mat-icon *ngIf="service.isChosen" fontSet="material-icons-outlined" class="icon-large">check</mat-icon>
+        </button>
+      </div>
+      <a *ngIf="steps && steps.nextRoute" [routerLink]='["/" + steps.nextRoute]' (click)="nextStep()">
+        Next step
+      </a>
+      <a *ngIf="steps && steps.prevRoute" [routerLink]='["/" + steps.prevRoute]'>
+        Prev step
+      </a>
+    </form>
+  </div>
+</div>

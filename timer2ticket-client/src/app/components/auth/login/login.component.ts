@@ -19,7 +19,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   public rememberCredentials: Boolean = true;
   public displayPassword: Boolean = false;
 
-  private _$userSubscription: Subscription;
+  private $_userSubscription: Subscription;
 
   constructor(
     private _appData: AppData,
@@ -36,13 +36,11 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
 
     // TODO delete - login automatically
-    // this.testLogin();
+    this._testLogin();
   }
 
   ngOnDestroy(): void {
-    if (this._$userSubscription) {
-      this._$userSubscription.unsubscribe();
-    }
+    this.$_userSubscription?.unsubscribe();
   }
 
   changeRememberCredentials(): void {
@@ -54,7 +52,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   authenticate(): void {
-    this._$userSubscription = this._authenticationService
+    this.$_userSubscription = this._authenticationService
       .authenticate(this.preAuthenticatedUser.username, this.preAuthenticatedUser.password)
       .subscribe((user) => {
         if (user) {
@@ -62,26 +60,25 @@ export class LoginComponent implements OnInit, OnDestroy {
           if (this.rememberCredentials) {
             localStorage.username = user.username;
           }
-          this.redirect();
+          this._redirect();
         }
       }, (error) => {
         this.app.buildNotification('Wrong email or password.');
       });
   }
 
-  private redirect(): void {
-    const user = this._appData.getUser();
+  private _redirect(): void {
+    const user = this._appData.userValue;
     if (user) {
       if (user.status === 'registrated') {
-        this._router.navigate(['main-view/services-choose'], { replaceUrl: true });
+        this._router.navigate(['config-steps/services-choose'], { replaceUrl: true });
       } else {
-        // TODO navigate to overview
-        this._router.navigate(['main-view/services-choose'], { replaceUrl: true });
+        this._router.navigate(['overview'], { replaceUrl: true });
       }
     }
   }
 
-  private testLogin(): void {
+  private _testLogin(): void {
     this.preAuthenticatedUser.username = 'test@test.test';
     this.preAuthenticatedUser.password = 'password123';
     this.authenticate();

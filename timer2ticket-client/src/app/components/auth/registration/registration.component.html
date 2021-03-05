@@ -1,4 +1,4 @@
-<div class="auth-container">
+<div class="content-container">
   <div class="content-centered">
     <h1>Registration</h1>
     <form>
@@ -19,8 +19,8 @@
         <span>Fill in your password again.</span>
       </div>
       <button type="submit" (click)="registrate()" [disabled]="!email.valid || !password.valid || !passwordAgain.valid">
-        Registrate <mat-icon>how_to_reg</mat-icon></button>
-      <a [routerLink]='["/login"]'>Cancel <mat-icon>close</mat-icon></a>
+        Registrate <mat-icon fontSet="material-icons-outlined">how_to_reg</mat-icon></button>
+      <a [routerLink]='["/login"]'>Cancel <mat-icon fontSet="material-icons-outlined">close</mat-icon></a>
     </form>
   </div>
 </div>

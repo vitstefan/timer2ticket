@@ -1,0 +1,17 @@
+
+button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1.5em;
+}
+
+.services-container {
+  width: 100%;
+  padding-top: 3em;
+  padding-bottom: 6em;
+  display: flex;
+  flex-direction: column;
+  gap: 1.0em;
+}
