@@ -1,0 +1,128 @@
+<div class="content-container">
+  <div class="content-centered">
+    <h1 class="custom-h1">{{ steps.currentStepNumber }} / {{ stepsCount }}</h1>
+    <h2 class="custom-h2">Synchronization schedule</h2>
+    <form>
+      <!-- configuration schedule -->
+      <h3 class="custom-h3" (click)="conftooltip.show()"
+        matTooltip="Schedule how often your projects, issues, etc. will be synced from primary service to the others."
+        #conftooltip="matTooltip">Configuration sync jobs schedule <mat-icon fontSet="material-icons-outlined">
+          help_outline
+        </mat-icon>
+      </h3>
+      <div class="everyday-container">
+        <div>
+          <mat-checkbox id="conf-everyday" name="conf-everyday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenEveryday" (ngModelChange)="changeConfEveryday()">Everyday
+          </mat-checkbox>
+          <mat-checkbox id="conf-monday" name="conf-monday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenMonday" (ngModelChange)="changeConfDay()">
+            Every Monday
+          </mat-checkbox>
+          <mat-checkbox id="conf-tuesday" name="conf-tuesday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenTuesday" (ngModelChange)="changeConfDay()">Every Tuesday
+          </mat-checkbox>
+          <mat-checkbox id="conf-wednesday" name="conf-wednesday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenWednesday" (ngModelChange)="changeConfDay()">Every Wednesday
+          </mat-checkbox>
+        </div>
+        <div>
+          <mat-checkbox id="conf-thursday" name="conf-thursday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenThursday" (ngModelChange)="changeConfDay()">Every Thursday
+          </mat-checkbox>
+          <mat-checkbox id="conf-friday" name="conf-friday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenFriday" (ngModelChange)="changeConfDay()">
+            Every Friday
+          </mat-checkbox>
+          <mat-checkbox id="conf-saturday" name="conf-saturday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenSaturday" (ngModelChange)="changeConfDay()">Every Saturday
+          </mat-checkbox>
+          <mat-checkbox id="conf-sunday" name="conf-sunday" type="checkbox" color="primary"
+            [(ngModel)]="confChosenSunday" (ngModelChange)="changeConfDay()">
+            Every Sunday
+          </mat-checkbox>
+        </div>
+      </div>
+      <ng-container *ngIf="showConfEveryDetail">
+        <label for="conf-every">Every</label>
+        <select id="conf-every" name="conf-every" [(ngModel)]="confEvery">
+          <option *ngFor="let everySchedule of everySchedules" [ngValue]="everySchedule">{{ everySchedule.label }}
+          </option>
+        </select>
+      </ng-container>
+      <ng-container *ngIf="showConfAt">
+        <label for="conf-at">At</label>
+        <input id="conf-at" name="conf-at" type="time" [(ngModel)]="confAt" required #apikey="ngModel">
+      </ng-container>
+
+      <!-- timeEntries schedule -->
+      <h3 class="custom-h3 h3-padding-top" (click)="timeentriestooltip.show()"
+        matTooltip="Schedule how often your time entries will be synced across your services."
+        #timeentriestooltip="matTooltip">Time entries sync jobs schedule <mat-icon fontSet="material-icons-outlined">
+          help_outline
+        </mat-icon>
+      </h3>
+      <div class="everyday-container">
+        <div>
+          <mat-checkbox id="time-entries-everyday" name="time-entries-everyday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenEveryday" (ngModelChange)="changeTimeEntriesEveryday()">Everyday
+          </mat-checkbox>
+          <mat-checkbox id="time-entries-monday" name="time-entries-monday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenMonday" (ngModelChange)="changeTimeEntriesDay()">
+            Every Monday
+          </mat-checkbox>
+          <mat-checkbox id="time-entries-tuesday" name="time-entries-tuesday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenTuesday" (ngModelChange)="changeTimeEntriesDay()">Every Tuesday
+          </mat-checkbox>
+          <mat-checkbox id="time-entries-wednesday" name="time-entries-wednesday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenWednesday" (ngModelChange)="changeTimeEntriesDay()">Every Wednesday
+          </mat-checkbox>
+        </div>
+        <div>
+          <mat-checkbox id="time-entries-thursday" name="time-entries-thursday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenThursday" (ngModelChange)="changeTimeEntriesDay()">
+            Every Thursday
+          </mat-checkbox>
+          <mat-checkbox id="time-entries-friday" name="time-entries-friday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenFriday" (ngModelChange)="changeTimeEntriesDay()">
+            Every Friday
+          </mat-checkbox>
+          <mat-checkbox id="time-entries-saturday" name="time-entries-saturday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenSaturday" (ngModelChange)="changeTimeEntriesDay()">
+            Every Saturday
+          </mat-checkbox>
+          <mat-checkbox id="time-entries-sunday" name="time-entries-sunday" type="checkbox" color="primary"
+            [(ngModel)]="timeEntriesChosenSunday" (ngModelChange)="changeTimeEntriesDay()">
+            Every Sunday
+          </mat-checkbox>
+        </div>
+      </div>
+      <ng-container *ngIf="showTimeEntriesEveryDetail">
+        <label for="time-entries-every">Every</label>
+        <select id="time-entries-every" name="time-entries-every" [(ngModel)]="timeEntriesEvery">
+          <option *ngFor="let everySchedule of everySchedules" [ngValue]="everySchedule">{{ everySchedule.label }}
+          </option>
+        </select>
+      </ng-container>
+      <ng-container *ngIf="showTimeEntriesAt">
+        <label for="time-entries-at">At</label>
+        <input id="time-entries-at" name="time-entries-at" type="time" [(ngModel)]="timeEntriesAt" required
+          #apikey="ngModel">
+      </ng-container>
+
+      <div class="steps-container">
+        <a *ngIf="steps && steps.nextRoute && showNextStep() && user.status !== 'registrated'"
+          [routerLink]='["/config-steps/confirmation"]' (click)="nextStep()">
+          Jump to confirmation
+        </a>
+        <a *ngIf="steps && steps.nextRoute && showNextStep()" [routerLink]='["/" + steps.nextRoute]'
+          (click)="nextStep()">
+          Next step
+        </a>
+        <a *ngIf="steps && steps.prevRoute" [routerLink]='["/" + steps.prevRoute]'>
+          Prev step
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

@@ -15,10 +15,6 @@ html {
   scroll-behavior: smooth;
 }
 
-html, body, main {
-  /* height: calc(100% - 2.2em); */
-}
-
 body {
   font-family: Montserrat, Arial, sans-serif;
   margin: 0;
@@ -65,7 +61,7 @@ label .mat-checkbox-label {
   font-size: calc(0.6em + 0.3vw);
 }
 
-button, input {
+button, input, select {
   border-radius: 50px;
   font-family: Montserrat, Arial, Sans Serif;
   font-size: calc(0.7em + 0.9vw);
@@ -98,11 +94,15 @@ button:disabled {
   color: var(--disabled-color);
 }
 
-input {
+input, select {
   border: 3px solid var(--text-color);
   background-color: var(--background);
   /* text-indent: 2.0vh; */
   text-align: center;
+  width: 80%;
+}
+
+select {
   width: 70%;
 }
 
@@ -112,11 +112,16 @@ input {
   justify-content: center;
   align-items: center;
   margin-bottom: 0.7em;
-  width: 70%;
+  width: 80%;
 }
 
-.element-hint-below input {
+.element-hint-below input, select {
   width: 100%;
+  margin-bottom: 0.3em;
+}
+
+.element-hint-below select {
+  width: 110%;
   margin-bottom: 0.3em;
 }
 
@@ -139,8 +144,9 @@ a {
 }
 
 .content-container {
-  min-width: 100vw;
-  min-height: calc(100% - 4.4em);
+  min-width: 100%;
+  /* 100% minus header height */
+  min-height: calc(100% - (1.3em + 1.6vw));
   display: flex;
   justify-content: center;
   /* at least same as header => height: calc(1.3em + 1.6vw); */
@@ -151,8 +157,8 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 50vw;
-  padding-bottom: 5em;
+  width: 70vw;
+  padding-bottom: 7em;
 }
 
 form {
@@ -162,6 +168,18 @@ form {
   align-items: center;
   gap: clamp(1em, 4vh, 1.5em);
   width: clamp(28em, 30vw, 38em)
+}
+
+form label {
+  padding-top: 1.2em;
+}
+
+.steps-container {
+  padding-top: 2.0em;
+}
+
+.steps-container>* {
+  padding-top: 1.2em;
 }
 
 @media only screen and (max-width: 880px) {

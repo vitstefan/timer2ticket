@@ -33,17 +33,19 @@ export class RegistrationComponent implements OnDestroy {
     if (this.preRegistratedUser.password !== this.preRegistratedUser.passwordAgain) {
       this.app.buildNotification('Passwords are not same.');
     } else {
+      this.app.showLoading();
       this.$_isRegistrationOkSubscription = this._registrationService.registrate(
         this.preRegistratedUser.username,
         this.preRegistratedUser.password,
         this.preRegistratedUser.passwordAgain,
       ).subscribe(() => {
-        this.app.buildNotification('Successfully registrated. Please log in to continue.');
 
         localStorage.rememberCredentials = true;
         localStorage.username = this.preRegistratedUser.username;
 
         this.redirect();
+        this.app.hideLoading();
+        this.app.buildNotification('Successfully registrated. Please log in to continue.');
       }, (errorStatus) => {
         if (errorStatus === 409) {
           this.app.buildNotification('Error.');
@@ -52,6 +54,7 @@ export class RegistrationComponent implements OnDestroy {
         } else {
           this.app.buildNotification('Server error.');
         }
+        this.app.hideLoading();
       });
     }
   }

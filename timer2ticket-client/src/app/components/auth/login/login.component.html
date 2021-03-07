@@ -10,9 +10,8 @@
       <!-- password at least 8 characters, at least one number -->
       <label for="password">Password *</label>
       <div class="element-hint-below">
-        <input id="password" name="password" [type]="displayPassword ? 'text' : 'password'"
-          [(ngModel)]="preAuthenticatedUser.password" required #password="ngModel"
-          pattern="(?=.*\d)(?=.*[a-z,A-Z]).{8,}">
+        <input id="password" name="password" type="password" [(ngModel)]="preAuthenticatedUser.password" required
+          #password="ngModel" pattern="(?=.*\d)(?=.*[a-z,A-Z]).{8,}">
         <span>Provide your password (at least 8 characters with numbers).</span>
       </div>
       <mat-checkbox id="remember-credentials" name="remember-credentials" type="checkbox" color="primary"
@@ -20,7 +19,8 @@
       </mat-checkbox>
       <button type="submit" (click)="authenticate()" [disabled]="!email.valid || !password.valid">
         Log in <mat-icon fontSet="material-icons-outlined">login</mat-icon></button>
-      <a [routerLink]='["/registration"]'>New user? Registrate <mat-icon fontSet="material-icons-outlined">how_to_reg</mat-icon></a>
+      <a [routerLink]='["/registration"]'>New user? Registrate <mat-icon fontSet="material-icons-outlined">how_to_reg
+        </mat-icon></a>
     </form>
   </div>
 </div>

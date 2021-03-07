@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { AfterContentInit, Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { User } from './models/user.model';
@@ -11,11 +11,13 @@ declare var buildNotification: any;
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit, OnDestroy, AfterContentInit {
 
   public user: User;
 
   private $_userSubscription: Subscription;
+
+  public loadingHidden: boolean;
 
   constructor(
     private _router: Router,
@@ -29,10 +31,16 @@ export class AppComponent implements OnInit, OnDestroy {
     this.$_userSubscription = this._appData.user.subscribe((user) => {
       this.user = user;
     });
+
+    this.loadingHidden = true;
   }
 
   ngOnDestroy(): void {
     this.$_userSubscription?.unsubscribe();
+  }
+
+  ngAfterContentInit() {
+    this.loadingHidden = true;
   }
 
   private redirectToLogin(): void {
@@ -40,6 +48,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   public buildNotification(content: String) {
-    new buildNotification(content, 0, 0, 3, 0, 2);
+    new buildNotification(content, 0, 0, 2, 0, 4);
+  }
+
+  public hideLoading(): void {
+    this.loadingHidden = true;
+  }
+
+  public showLoading(): void {
+    this.loadingHidden = false;
   }
 }

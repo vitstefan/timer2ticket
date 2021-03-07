@@ -1,0 +1,50 @@
+<div class="content-container">
+  <div class="content-centered">
+    <h1 class="custom-h1">{{ steps.currentStepNumber }} / {{ stepsCount }}</h1>
+    <h2 class="custom-h2">Redmine configuration</h2>
+    <form>
+      <label for="api-key">API key *</label>
+      <div class="element-hint-below">
+        <input id="api-key" name="api-key" type="text" [(ngModel)]="serviceDefinition.apiKey" required #apikey="ngModel"
+          [disabled]="showTimeEntryActivities">
+        <span>Provide your API key to successfully connect to Redmine service.</span>
+      </div>
+      <label for="api-point">API point *</label>
+      <div class="element-hint-below">
+        <input id="api-point" name="api-point" type="text" [(ngModel)]="serviceDefinition.config.apiPoint" required
+          #apipoint="ngModel" [disabled]="showTimeEntryActivities">
+        <span>Provide your Redmine API point (should be url) to successfully connect to Redmine service.</span>
+      </div>
+      <button *ngIf="!showTimeEntryActivities" type="submit" (click)="checkIfCorrect()"
+        [disabled]="!apikey.valid || !apipoint.valid">
+        Check if correct<mat-icon fontSet="material-icons-outlined">done_all</mat-icon></button>
+      <label *ngIf="showTimeEntryActivities" for="default-time-entry-activity">Default time entry activity *</label>
+      <div *ngIf="showTimeEntryActivities" class="element-hint-below">
+        <select id="default-time-entry-activity" name="default-time-entry-activity"
+          [(ngModel)]="defaultTimeEntryActivity" (ngModelChange)="changeDefaultTimeEntryActivity()">
+          <option *ngFor="let activity of timeEntryActivities" [ngValue]="activity">{{ activity.name }}</option>
+        </select>
+        <span>If activity will not be chosen in the time entry (in other service), this one will be filled.</span>
+      </div>
+      <div *ngIf="showTimeEntryActivities" class="element-hint-below">
+        <mat-checkbox id="is-primary" name="is-primary" type="checkbox" color="primary"
+          [(ngModel)]="serviceDefinition.isPrimary" disabled>Primary service?
+        </mat-checkbox>
+        <span>Projects etc. will be synced from this service to the others. (Redmine has to be primary, for now)</span>
+      </div>
+      <div class="steps-container">
+        <a *ngIf="steps && steps.nextRoute && showTimeEntryActivities && defaultTimeEntryActivity && user.status !== 'registrated'"
+          [routerLink]='["/config-steps/confirmation"]' (click)="nextStep()">
+          Jump to confirmation
+        </a>
+        <a *ngIf="steps && steps.nextRoute && showTimeEntryActivities && defaultTimeEntryActivity"
+          [routerLink]='["/" + steps.nextRoute]' (click)="nextStep()">
+          Next step
+        </a>
+        <a *ngIf="steps && steps.prevRoute" [routerLink]='["/" + steps.prevRoute]'>
+          Prev step
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

@@ -17,7 +17,7 @@ export class HttpErrorInterceptor implements HttpInterceptor {
     return next.handle(request).pipe(catchError(err => {
       if (err.status === 401) {
         //auto logout if 401 response returned from api
-        console.log("!!!!! LOGOUT via ErrorInterceptor http");
+        console.log('LOGOUT via HttpErrorInterceptor');
         this._router.navigate(['/login'], { replaceUrl: true });
         this._appData.setUser(null);
       }

@@ -24,6 +24,7 @@ import { ScheduleComponent } from './components/config-steps/schedule/schedule.c
 import { ConfirmationComponent } from './components/config-steps/confirmation/confirmation.component';
 import { HttpHeaderInterceptor } from './interceptors/http-header.interceptor';
 import { HttpErrorInterceptor } from './interceptors/http-error.interceptor';
+import { SyncedServicesConfigService } from './services/synced-services-config.service';
 
 @NgModule({
   declarations: [
@@ -56,6 +57,7 @@ import { HttpErrorInterceptor } from './interceptors/http-error.interceptor';
     RegistrationService,
     AuthenticationService,
     UserService,
+    SyncedServicesConfigService,
   ],
   bootstrap: [AppComponent]
 })

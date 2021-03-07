@@ -1,9 +1,18 @@
+h2 {
+  padding-top: 4.0em;
+  padding-bottom: unset;
+  margin-bottom: unset;
+}
+
+button {
+  max-width: 20em;
+}
+
 section {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: 2em;
-  padding-bottom: 3em;
 }
 
 section>* {
@@ -12,4 +21,8 @@ section>* {
   font-size: 1.5em;
   line-height: 1.2em;
   text-align: center;
+}
+
+.order-padding {
+  padding-right: 0.8em;
 }

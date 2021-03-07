@@ -1,0 +1,26 @@
+<div class="content-container">
+  <div class="content-centered">
+    <h1 class="custom-h1">
+      {{ user.status === 'active' ? 'Sync is on' : 'Sync is off' }}
+    </h1>
+
+    <button type="button" (click)="changeSync()">
+      {{ user.status === 'active' ? 'Turn off sync' : 'Turn on sync' }}
+    </button>
+
+    <h2 class="custom-h2">How to correctly sync time entry</h2>
+    <section>
+      <ng-container *ngFor="let service of serviceHints">
+        <span><strong>{{ service.serviceName }}</strong></span>
+        <div [innerHtml]="service.timeEntriesSyncHint"></div>
+      </ng-container>
+    </section>
+
+    <h2 class="custom-h2">Revisit configuration step</h2>
+    <div class="steps-container">
+      <a *ngFor="let step of reachableSteps" [routerLink]='["/" + step.route]'>
+        <span class="order-padding">{{ step.order }}</span> {{ step.label }}
+      </a>
+    </div>
+  </div>
+</div>

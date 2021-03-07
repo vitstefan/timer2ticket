@@ -1,1 +1,28 @@
-<p>confirmation works!</p>
+<div class="content-container">
+  <div class="content-centered">
+    <h1 class="custom-h1">{{ steps.currentStepNumber }} / {{ stepsCount }}</h1>
+    <h2 class="custom-h2">Confirmation</h2>
+    <form>
+      <section>
+        <span>Project, issues, etc. will be synced from</span>
+        <span><strong>{{ primaryService }}</strong></span>
+        <span>to</span>
+        <span *ngFor="let otherService of otherServices"><strong>{{ otherService }}</strong></span>
+      </section>
+
+      <section>
+        <span>Time entries will be synced between</span>
+        <span *ngFor="let service of allServices"><strong>{{ service }}</strong></span>
+      </section>
+
+      <button type="submit" (click)="confirm()">
+        Confirm <mat-icon fontSet="material-icons-outlined">done_all</mat-icon></button>
+
+      <div class="steps-container">
+        <a *ngIf="steps && steps.prevRoute" [routerLink]='["/" + steps.prevRoute]'>
+          Prev step
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

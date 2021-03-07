@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { User } from '../models/user.model';
 
@@ -10,27 +10,19 @@ import { User } from '../models/user.model';
 export class UserService {
   private _usersApiUrl: string = 'api/users';
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private _http: HttpClient,
+  ) { }
 
   update(user: User): Observable<User> {
     console.log("***** USER ***** update");
-    return this.http.put<User>(this._usersApiUrl, user).pipe(
-      catchError(this.handleError<User>('userUpdate', undefined))
-    );
-  }
-
-  /**
-   * Handle Http operation that failed.
-   * Let the app continue.
-   * @param operation - name of the operation that failed
-   * @param result - optional value to return as the observable result
-  */
-  private handleError<T>(operation = 'operation', result?: T) {
-    return (error: any): Observable<T> => {
-      console.log(`${operation} error: ${error}`);
-
-      // Let the app keep running by returning an empty result.
-      return of(result as T);
-    };
+    return this._http.put<User>(`${this._usersApiUrl}/${user._id}`, { user: user })
+      .pipe(
+        catchError((error) => {
+          console.error(error);
+          // rethrow status back to the component
+          return throwError(error.status);
+        })
+      );
   }
 }

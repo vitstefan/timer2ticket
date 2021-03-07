@@ -14,6 +14,6 @@ export class ServiceDefinition {
     this.name = name;
     this.apiKey = '';
     this.isPrimary = isPrimary ?? false;
-    this.config = null;
+    this.config = new Config();
   }
 }

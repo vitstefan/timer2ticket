@@ -41,14 +41,11 @@ export class ServicesChooseComponent implements OnInit, OnDestroy {
     this.$_userSubscription = this._appData.user.subscribe(user => this.user = user);
     this.$_stepsCountSubscription = this._appData.stepsCount.subscribe(stepsCount => this.stepsCount = stepsCount);
 
-    this._servicesToChooseMap = new Map();
-    this._servicesToChooseMap.set('Redmine', new ServiceToChoose('Redmine'));
-    this._servicesToChooseMap.set('TogglTrack', new ServiceToChoose('Toggl Track'));
+    this._servicesToChooseMap = this._appData.populateServicesMap();
 
     this.servicesToChooseList = [...this._servicesToChooseMap.values()];
 
     this.user.serviceDefinitions.forEach(serviceDefinition => {
-      console.log(serviceDefinition.name);
       this._servicesToChooseMap.get(serviceDefinition.name).isChosen = true;
     });
 
@@ -82,7 +79,7 @@ export class ServicesChooseComponent implements OnInit, OnDestroy {
       this.user.serviceDefinitions = [];
       this.servicesToChooseList.forEach(serviceToChoose => {
         if (serviceToChoose.isChosen) {
-          this.user.serviceDefinitions.push(new ServiceDefinition(serviceToChoose.key, serviceToChoose.name === 'Redmine' ? true : false));
+          this.user.serviceDefinitions.push(new ServiceDefinition(serviceToChoose.key, serviceToChoose.name === 'Redmine'));
         }
       });
       this._appData.setUser(this.user);
@@ -109,7 +106,7 @@ export class ServicesChooseComponent implements OnInit, OnDestroy {
             this.servicesToChooseList.forEach(serviceToChoose => {
               const indexOfServiceDefinition = this.user.serviceDefinitions.findIndex(serviceDefinition => serviceDefinition.name === serviceToChoose.key);
               if (serviceToChoose.isChosen && indexOfServiceDefinition === -1) {
-                this.user.serviceDefinitions.push(new ServiceDefinition(serviceToChoose.key, serviceToChoose.name === 'Redmine' ? true : false));
+                this.user.serviceDefinitions.push(new ServiceDefinition(serviceToChoose.key, serviceToChoose.name === 'Redmine'));
               } else if (!serviceToChoose.isChosen && indexOfServiceDefinition >= 0) {
                 this.user.serviceDefinitions.splice(indexOfServiceDefinition, 1);
               }

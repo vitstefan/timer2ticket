@@ -36,7 +36,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
 
     // TODO delete - login automatically
-    this._testLogin();
+    // this._testLogin();
   }
 
   ngOnDestroy(): void {
@@ -52,6 +52,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   authenticate(): void {
+    this.app.showLoading();
     this.$_userSubscription = this._authenticationService
       .authenticate(this.preAuthenticatedUser.username, this.preAuthenticatedUser.password)
       .subscribe((user) => {
@@ -62,8 +63,10 @@ export class LoginComponent implements OnInit, OnDestroy {
           }
           this._redirect();
         }
+        this.app.hideLoading();
       }, (error) => {
         this.app.buildNotification('Wrong email or password.');
+        this.app.hideLoading();
       });
   }
 

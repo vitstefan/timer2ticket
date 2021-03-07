@@ -1,0 +1,47 @@
+<div class="content-container">
+  <div class="content-centered">
+    <h1 class="custom-h1">{{ steps.currentStepNumber }} / {{ stepsCount }}</h1>
+    <h2 class="custom-h2">Toggl Track configuration</h2>
+    <form>
+      <label for="api-key">API key *</label>
+      <div class="element-hint-below">
+        <input id="api-key" name="api-key" type="text" [(ngModel)]="serviceDefinition.apiKey" required #apikey="ngModel"
+          [disabled]="showWorkspaceField">
+        <span>Provide your API key to successfully connect to Redmine service.</span>
+      </div>
+      <button *ngIf="!showWorkspaceField" type="submit" (click)="checkIfCorrect()" [disabled]="!apikey.valid">
+        Check if correct<mat-icon fontSet="material-icons-outlined">done_all</mat-icon></button>
+      <label *ngIf="showWorkspaceField" for="chosen-workspace">Workspace *</label>
+      <div *ngIf="showWorkspaceField" class="element-hint-below">
+        <select id="chosen-workspace" name="chosen-workspace" [(ngModel)]="chosenWorkspace"
+          (ngModelChange)="changeWorkspace()" [disabled]="!isWorkspaceChangeEnabled">
+          <option *ngFor="let workspace of workspaces" [ngValue]="workspace">{{ workspace.name }}</option>
+        </select>
+        <span>
+          Time entries will be synced from/to this workspace.
+          {{ !isWorkspaceChangeEnabled ? ' (cannot be changed)' : '' }}
+        </span>
+      </div>
+      <div *ngIf="showWorkspaceField" class="element-hint-below">
+        <mat-checkbox id="is-primary" name="is-primary" type="checkbox" color="primary"
+          [(ngModel)]="serviceDefinition.isPrimary" disabled>Primary service?
+        </mat-checkbox>
+        <span>Projects etc. will be synced from this service to the others. (Toggl Track cannot be primary, for
+          now)</span>
+      </div>
+      <div class="steps-container">
+        <a *ngIf="steps && steps.nextRoute && showWorkspaceField && chosenWorkspace && user.status !== 'registrated'"
+          [routerLink]='["/config-steps/confirmation"]' (click)="nextStep()">
+          Jump to confirmation
+        </a>
+        <a *ngIf="steps && steps.nextRoute && showWorkspaceField && chosenWorkspace"
+          [routerLink]='["/" + steps.nextRoute]' (click)="nextStep()">
+          Next step
+        </a>
+        <a *ngIf="steps && steps.prevRoute" [routerLink]='["/" + steps.prevRoute]'>
+          Prev step
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

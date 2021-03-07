@@ -10,12 +10,15 @@
           <mat-icon *ngIf="service.isChosen" fontSet="material-icons-outlined" class="icon-large">check</mat-icon>
         </button>
       </div>
-      <a *ngIf="steps && steps.nextRoute" [routerLink]='["/" + steps.nextRoute]' (click)="nextStep()">
-        Next step
-      </a>
-      <a *ngIf="steps && steps.prevRoute" [routerLink]='["/" + steps.prevRoute]'>
-        Prev step
-      </a>
+      <div class="steps-container">
+        <a *ngIf="steps && steps.nextRoute && user.status !== 'registrated'"
+          [routerLink]='["/config-steps/confirmation"]' (click)="nextStep()">
+          Jump to confirmation
+        </a>
+        <a *ngIf="steps && steps.nextRoute" [routerLink]='["/" + steps.nextRoute]' (click)="nextStep()">
+          Next step
+        </a>
+      </div>
     </form>
   </div>
 </div>
