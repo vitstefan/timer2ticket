@@ -5,7 +5,6 @@ import { Config } from "./config/config";
  * Service dependent definitions are stored in config
  */
 export class ServiceDefinition {
-  id!: string;
   name!: string;
   apiKey!: string;
   isPrimary!: boolean;
