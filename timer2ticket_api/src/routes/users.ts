@@ -69,9 +69,8 @@ router.put('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   const token = res.locals.token;
 
   // TODO validate UserFromClient class
+  // validate also schedules: should be cron value, probably best would be enum of those in the client
   const userFromClient: UserFromClient = req.body.user;
-
-  console.log(userFromClient);
 
   // authorize if userId from JWT is the same as in userId param
   if (!res.locals.userIdFromToken || !userId || !token || !userFromClient) {
@@ -88,10 +87,15 @@ router.put('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
     return res.sendStatus(404);
   }
 
+  if (user.status === 'registrated') {
+    // set to inactive after config confirm, client should send another api request to start syncing (and status => active)
+    user.status = 'inactive';
+  }
+
   // only these properties can be changed this way
-  // user.configSyncJobDefinition = userFromClient.configSyncJobDefinition;
-  // user.timeEntrySyncJobDefinition = userFromClient.timeEntrySyncJobDefinition;
-  // user.serviceDefinitions = userFromClient.serviceDefinitions;
+  user.configSyncJobDefinition = userFromClient.configSyncJobDefinition;
+  user.timeEntrySyncJobDefinition = userFromClient.timeEntrySyncJobDefinition;
+  user.serviceDefinitions = userFromClient.serviceDefinitions;
 
   const updatedUser = await databaseService.updateUser(user);
 

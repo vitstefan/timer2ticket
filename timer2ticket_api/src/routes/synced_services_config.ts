@@ -25,7 +25,7 @@ router.use((req, res, next) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jwt.verify(token, AuthConfig.secret, (err: any, decoded: any) => {
     if (err) {
-      return res.sendStatus(401);
+      return res.status(401).send('invalid access token');
     }
     res.locals.userIdFromToken = decoded.id;
     res.locals.token = token;
@@ -38,7 +38,6 @@ router.use((req, res, next) => {
  * Also requests user detail (via provided redmine api key) to extract Redmine userId and send to user with activities as well (needed for sync Redmine requests, but can be hidden from the user)
  */
 router.get('/redmine_time_entry_activities', async (req, res) => {
-  console.log('3');
   // those 2 are filled by user in the client form
   const redmineApiKey: string | undefined = req.query['api_key']?.toString();
   let redmineApiPoint: string | undefined = req.query['api_point']?.toString();
@@ -61,10 +60,13 @@ router.get('/redmine_time_entry_activities', async (req, res) => {
     .on('error', (err) => {
       // on error, response with status from Redmine
       let statusCode = 503;
-      if (err && err.status) {
-        statusCode = err.status
+      if (err && err.status && err.status !== 401) {
+        statusCode = err.status;
+      } else if (err && err.status && err.status === 401) {
+        // do not send 401, it would lead to user logout on the client side due to error intercepting
+        statusCode = 400;
       }
-
+      
       return res.sendStatus(statusCode);
     });
 
@@ -79,8 +81,11 @@ router.get('/redmine_time_entry_activities', async (req, res) => {
     .on('error', (err) => {
       // on error, response with status from Redmine
       let statusCode = 503;
-      if (err && err.status) {
-        statusCode = err.status
+      if (err && err.status && err.status !== 401) {
+        statusCode = err.status;
+      } else if (err && err.status && err.status === 401) {
+        // do not send 401, it would lead to user logout on the client side due to error intercepting
+        statusCode = 400;
       }
 
       return res.sendStatus(statusCode);
@@ -124,10 +129,13 @@ router.get('/toggl_track_workspaces', async (req, res) => {
     .get('https://api.track.toggl.com/api/v8/me')
     .auth(togglTrackApiKey, 'api_token')
     .on('error', (err) => {
-      // on error, response with status from Redmine
+      // on error, response with status from Toggl Track
       let statusCode = 503;
-      if (err && err.status) {
-        statusCode = err.status
+      if (err && err.status && err.status !== 401) {
+        statusCode = err.status;
+      } else if (err && err.status && err.status === 401) {
+        // do not send 401, it would lead to user logout on the client side due to error intercepting
+        statusCode = 400;
       }
 
       return res.sendStatus(statusCode);
