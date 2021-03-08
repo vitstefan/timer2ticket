@@ -1,6 +1,5 @@
 import { ServiceDefinition } from "../models/service_definition/service_definition";
 import { TimeEntry } from "../models/synced_service/time_entry/time_entry";
-import { Utilities } from "../shared/utilities";
 import { SyncedServiceCreator } from "../synced_services/synced_service_creator";
 import { SyncJob } from "./sync_job";
 import { databaseService } from '../shared/database_service';
@@ -17,15 +16,24 @@ export class TimeEntriesSyncJob extends SyncJob {
    */
   async doTheJob(): Promise<boolean> {
     let now = new Date();
-    const twoWeeksAgo = new Date(now.setDate(now.getDate() - 14));
+    // const twoWeeksAgo = new Date(now.setDate(now.getDate() - 14));
     now = new Date();
-    // TODO uncomment if not testing
-    // const start = Utilities.compare(user.registrated, twoWeeksAgo) > 0
-    //   ? user.registrated
+
+    // TODO - now it takes all TEs from the point where user registrated
+    // should care about the most later ones (or not? - discussion needed)
+    // problem: Toggl does not support asking for TEs with lastUpdated filter
+    // possible solution: get all and filter them here, but it would be kind of costly
+    // it is somewhat better and easier for now just taking all TEs
+    // beware of Toggl limit 1000 TEs for one request
+
+    // uncomment to take only 14 days old TEs
+    // const start = Utilities.compare(this._user.registrated, twoWeeksAgo) > 0
+    //   ? this._user.registrated
     //   : twoWeeksAgo;
-    const start = Utilities.compare(this._user.registrated, twoWeeksAgo) < 0
-      ? this._user.registrated
-      : twoWeeksAgo;
+    const start = this._user.registrated;
+    // start of the day
+    start.setHours(0);
+    start.setMinutes(0);
 
     // Need to load all time entries (TE) for each service
     // Try to find time entry in timeEntrySyncedObjects (TESOs) from DB

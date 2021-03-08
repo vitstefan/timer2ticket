@@ -16,8 +16,6 @@ export class ConfigSyncJob extends SyncJob {
    * E.g. looks for project definition in one service and checks if mapping is synced in PRIMARY (for example name could change, or project has been deleted)
    * If not, updates mappings and propagates change through other services
    * Additionally, checks if anything is missing in the secondary services and it should be there (user could delete it by mistake)
-   * 
-   * @param user Given user, mappings and everything should be there or this job creates them
    */
   async doTheJob(): Promise<boolean> {
     const primaryServiceDefinition: ServiceDefinition | undefined
@@ -62,7 +60,6 @@ export class ConfigSyncJob extends SyncJob {
         if (!mapping) {
           // scenario a)
           console.log('ConfigSyncJob: create');
-          console.log(objectToSync);
           mapping = await this._createMapping(objectToSync);
         } else {
           console.log('ConfigSyncJob: check');

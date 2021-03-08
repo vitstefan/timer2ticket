@@ -68,13 +68,15 @@ app.post('/api/start/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   // => start jobs again
 
   const configTask = activeUsersScheduledConfigSyncTasks.get(userId);
+  const timeEntriesTask = activeUsersScheduledTimeEntriesSyncTasks.get(userId);
+
   if (configTask) {
     configTask.destroy();
+    activeUsersScheduledConfigSyncTasks.delete(userId);
   }
-
-  const timeEntriesTask = activeUsersScheduledTimeEntriesSyncTasks.get(userId);
   if (timeEntriesTask) {
     timeEntriesTask.destroy();
+    activeUsersScheduledTimeEntriesSyncTasks.delete(userId);
   }
 
   const user = await databaseService.getUserById(userId);
@@ -106,9 +108,11 @@ app.post('/api/stop/:userId([a-zA-Z0-9]{24})', async (req, res) => {
 
   if (configTask) {
     configTask.destroy();
+    activeUsersScheduledConfigSyncTasks.delete(userId);
   }
   if (timeEntriesTask) {
     timeEntriesTask.destroy();
+    activeUsersScheduledTimeEntriesSyncTasks.delete(userId);
   }
 
   return res.send('User\'s jobs stopped successfully.');
@@ -132,6 +136,7 @@ app.post('/api/scheduled/:userId([a-zA-Z0-9]{24})', async (req, res) => {
 function scheduleJobs(user: User) {
   console.log(`SCHEDULE jobs for user ${user._id}`);
 
+  // cron schedule validation can be omitted (schedule is already validated when user - and schedule too - is updated)
   if (cron.validate(user.configSyncJobDefinition.schedule)) {
     const task = cron.schedule(user.configSyncJobDefinition.schedule, () => {
       console.log(' -> Added ConfigSyncJob');
