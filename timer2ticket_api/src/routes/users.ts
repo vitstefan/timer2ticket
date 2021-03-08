@@ -58,7 +58,7 @@ router.get('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   }
 
   // no content 204, conflict 409, bad request 400, not found 404, unauthorized 401, forbidden 403
-  res.send(new UserToClient(user, token));
+  return res.send(new UserToClient(user, token));
 });
 
 /**
@@ -100,9 +100,9 @@ router.put('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   const updatedUser = await databaseService.updateUser(user);
 
   if (updatedUser) {
-    res.send(new UserToClient(updatedUser, token));
+    return res.send(new UserToClient(updatedUser, token));
   } else {
-    res.sendStatus(503);
+    return res.sendStatus(503);
   }
 });
 

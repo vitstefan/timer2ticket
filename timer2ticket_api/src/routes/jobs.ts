@@ -54,25 +54,37 @@ router.post('/start/:userId([a-zA-Z0-9]{24})', async (req, res) => {
     return res.sendStatus(404);
   }
 
-  const response = await superagent
-    .post(`${Constants.t2tCoreApiUrl}start/${user._id}`)
-    .send({})
-    .on('error', (err) => {
-      let statusCode = 503;
-      if (err && err.status) {
-        statusCode = err.status
-      }
+  // set status to active now
+  user.status = 'active';
+  await databaseService.updateUser(user);
 
-      res.status(statusCode).send({ started: false });
-    });
+  try {
+    const response = await superagent
+      .post(`${Constants.t2tCoreApiUrl}start/${user._id}`)
+      .send({})
+      .on('error', (err) => {
+        let statusCode = 503;
+        if (err && err.status) {
+          statusCode = err.status
+        }
 
-  if (response.ok) {
-    // + change status => 'active'
-    user.status = 'active';
-    databaseService.updateUser(user);
-    res.send({ started: true });
-  } else {
-    res.send({ started: false });
+        // in case of error, set back status to inactive
+        user.status = 'inactive';
+        databaseService.updateUser(user);
+
+        return res.status(statusCode).send({ started: false });
+      });
+
+    if (response.ok) {
+      // + change status => 'active'
+      console.log('Jobs started, setting status => active');
+      user.status = 'active';
+      databaseService.updateUser(user);
+      return res.send({ started: true });
+    }
+  } catch (ex) {
+    // t2t core api errors already handled in .on callback above
+    // this handles only edge cases => should not happen
   }
 });
 
@@ -105,19 +117,18 @@ router.post('/stop/:userId([a-zA-Z0-9]{24})', async (req, res) => {
           statusCode = err.status
         }
 
-        res.status(statusCode).send({ stopped: false });
+        return res.status(statusCode).send({ stopped: false });
       });
 
     if (response.ok) {
       // + change status => 'inactive'
+      console.log('Jobs stopped, setting status => inactive');
       user.status = 'inactive';
       databaseService.updateUser(user);
-      res.send({ stopped: true });
-    } else {
-      res.send({ stopped: false });
+      return res.send({ stopped: true });
     }
   } catch (ex) {
-    // already handled in .on callback above
+    // t2t core api errors already handled in .on callback above
   }
 });
 
@@ -150,20 +161,17 @@ router.post('/scheduled/:userId([a-zA-Z0-9]{24})', async (req, res) => {
           statusCode = err.status
         }
 
-        res.status(statusCode).send({ scheduled: false });
+        return res.status(statusCode).send({ scheduled: false });
       });
 
 
     if (response.ok && response.body.scheduled === true) {
-      res.send({ scheduled: true });
+      return res.send({ scheduled: true });
     } else if (response.ok && response.body.scheduled === false) {
-      res.send({ scheduled: false });
-    } else {
-      // something went wrong
-      res.sendStatus(503);
+      return res.send({ scheduled: false });
     }
   } catch (ex) {
-    // already handled in .on callback above
+    // t2t core api errors already handled in .on callback above
   }
 });
 

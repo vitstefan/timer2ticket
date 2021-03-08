@@ -46,10 +46,10 @@ router.post('/', async (req, res) => {
         expiresIn: 21600, // 6 hours
       });
 
-    res.send(new UserToClient(userFromDB, token));
+    return res.send(new UserToClient(userFromDB, token));
   } catch (error) {
     console.log(error);
-    res.sendStatus(503);
+    return res.sendStatus(503);
   }
 });
 

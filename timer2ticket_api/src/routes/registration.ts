@@ -40,10 +40,10 @@ router.post('/', async (req, res) => {
     // store in DB
     await databaseService.createUser(user.username, hash);
 
-    res.sendStatus(204);
+    return res.sendStatus(204);
   } catch (ex) {
     console.log(ex);
-    res.sendStatus(503);
+    return res.sendStatus(503);
   }
 });
 
