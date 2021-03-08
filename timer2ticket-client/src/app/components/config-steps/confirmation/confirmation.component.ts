@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AppComponent } from 'src/app/app.component';
 import { User } from 'src/app/models/user.model';
+import { JobService } from 'src/app/services/job.service';
 import { UserService } from 'src/app/services/user.service';
 import { AppData } from 'src/app/singletons/app-data';
 
@@ -18,6 +19,7 @@ export class ConfirmationComponent implements OnInit, OnDestroy {
     public app: AppComponent,
     private _router: Router,
     private _userService: UserService,
+    private _jobService: JobService,
   ) { }
 
   private _route = 'config-steps/confirmation';
@@ -67,38 +69,28 @@ export class ConfirmationComponent implements OnInit, OnDestroy {
     this.app.showLoading();
     this._userService.update(this.user).subscribe(user => {
       this.user = user;
-      this._appData.setUser(this.user);
-      this._router.navigate(['overview']);
-      this.app.hideLoading();
-      this.app.buildNotification('Your configuration was successfully saved. However something went wrong with syncing. Try to sync manually.');
-      // this.app.buildNotification('You\'re synced! Your configuration was successfully saved.');
-      // TODO send another request
+
+      // send another request to start sync jobs
+      this._jobService.start(this.user._id).subscribe(res => {
+        this._router.navigate(['overview']);
+        this.app.hideLoading();
+        if (res.started) {
+          this.user.status = 'active';
+          this.app.buildNotification('Your configuration was successfully saved and you\'re SYNCED! Amazing!');
+        } else {
+          this.app.buildNotification('Your configuration was successfully saved. However something went wrong with syncing. Try to sync manually.');
+        }
+        this._appData.setUser(this.user);
+      }, (error) => {
+        this._router.navigate(['overview']);
+        this._appData.setUser(this.user);
+        this.app.hideLoading();
+        this.app.buildNotification('Your configuration was successfully saved. However something went wrong with syncing. Try to sync manually.');
+      });
     }, (error) => {
       this.app.hideLoading();
       this.app.buildNotification('Something went wrong. Try to confirm once again please.');
     });
-
-
-    // this.app.showLoading();
-    // this._syncedServicesConfigService
-    //   .redmineTimeEntryActivities(this.serviceDefinition.apiKey, this.serviceDefinition.config.apiPoint)
-    //   .subscribe(data => {
-    //     this.serviceDefinition.config.userId = data.user_id;
-
-    //     this.timeEntryActivities = data.time_entry_activities;
-    //     if (this.serviceDefinition.config.defaultTimeEntryActivityId) {
-    //       this.defaultTimeEntryActivity = this.timeEntryActivities.find(tea => tea.id === this.serviceDefinition.config.defaultTimeEntryActivityId) ?? null;
-    //     } else if (this.timeEntryActivities.length > 0) {
-    //       this.defaultTimeEntryActivity = this.timeEntryActivities[0];
-    //     }
-
-    //     this.showTimeEntryActivities = true;
-    //     this.app.hideLoading();
-    //     this.app.buildNotification('It seems OK! Choose your default activity and continue with next step.');
-    //   }, (error) => {
-    //     this.app.hideLoading();
-    //     this.app.buildNotification('Something went wrong. Check the fields again please.');
-    //   });
   }
 
 }

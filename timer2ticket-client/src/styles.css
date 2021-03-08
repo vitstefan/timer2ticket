@@ -133,7 +133,7 @@ select {
 
 a {
   font-family: Montserrat, Arial, Sans Serif;
-  font-size: calc(0.7em + 0.9vw);
+  font-size: calc(0.8em + 0.85vw);
   text-decoration: none;
   text-align: center;
   height: unset;
@@ -182,6 +182,15 @@ form label {
   padding-top: 1.2em;
 }
 
+.above-h1-text {
+  font-family: Montserrat Light, Arial, sans-serif;
+  color: var(--text-color);
+  padding-top: calc(1.3em + 1.6vw);
+  font-size: clamp(1em, 4vw, 1.7em);
+  text-align: center;
+  line-height: 1.2;
+}
+
 @media only screen and (max-width: 880px) {
   .filters-container {
     flex-direction: column;
@@ -191,6 +200,9 @@ form label {
     flex-direction: column;
     align-items: center;
     width: 70vw;
+  }
+  input, select {
+    border: 2px solid var(--text-color);
   }
 }
 
@@ -204,6 +216,9 @@ form label {
   }
   .content-centered {
     width: 90vw;
+  }
+  input, select {
+    border: 1px solid var(--text-color);
   }
 }
 

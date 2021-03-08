@@ -16,7 +16,7 @@
       </section>
 
       <button type="submit" (click)="confirm()">
-        Confirm <mat-icon fontSet="material-icons-outlined">done_all</mat-icon></button>
+        Confirm and start syncing <mat-icon fontSet="material-icons-outlined">done_all</mat-icon></button>
 
       <div class="steps-container">
         <a *ngIf="steps && steps.prevRoute" [routerLink]='["/" + steps.prevRoute]'>

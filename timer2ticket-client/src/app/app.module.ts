@@ -25,6 +25,7 @@ import { ConfirmationComponent } from './components/config-steps/confirmation/co
 import { HttpHeaderInterceptor } from './interceptors/http-header.interceptor';
 import { HttpErrorInterceptor } from './interceptors/http-error.interceptor';
 import { SyncedServicesConfigService } from './services/synced-services-config.service';
+import { JobService } from './services/job.service';
 
 @NgModule({
   declarations: [
@@ -58,6 +59,7 @@ import { SyncedServicesConfigService } from './services/synced-services-config.s
     AuthenticationService,
     UserService,
     SyncedServicesConfigService,
+    JobService,
   ],
   bootstrap: [AppComponent]
 })

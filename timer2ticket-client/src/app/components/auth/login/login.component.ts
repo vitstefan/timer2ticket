@@ -34,9 +34,6 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (this.rememberCredentials) {
       this.preAuthenticatedUser.username = localStorage.username ?? '';
     }
-
-    // TODO delete - login automatically
-    // this._testLogin();
   }
 
   ngOnDestroy(): void {
@@ -64,8 +61,13 @@ export class LoginComponent implements OnInit, OnDestroy {
           this._redirect();
         }
         this.app.hideLoading();
-      }, (error) => {
-        this.app.buildNotification('Wrong email or password.');
+      }, (errorStatus) => {
+        console.log(errorStatus);
+        if (errorStatus < 500) {
+          this.app.buildNotification('Wrong email or password.');
+        } else {
+          this.app.buildNotification('Server did not respond. Try again please.');
+        }
         this.app.hideLoading();
       });
   }
@@ -79,11 +81,5 @@ export class LoginComponent implements OnInit, OnDestroy {
         this._router.navigate(['overview'], { replaceUrl: true });
       }
     }
-  }
-
-  private _testLogin(): void {
-    this.preAuthenticatedUser.username = 'test@test.test';
-    this.preAuthenticatedUser.password = 'password123';
-    this.authenticate();
   }
 }

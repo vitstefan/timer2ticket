@@ -9,7 +9,7 @@ header {
   align-items: center;
   padding-left: 1em;
   font-family: Montserrat Medium, Arial, sans-serif;
-  font-size: calc(0.9em + 1.5vw);
+  font-size: calc(0.7em + 1.6vw);
   box-shadow: 0px 1px 8px -2px var(--text-color);
   -moz-box-shadow: 0px 1px 8px -2px var(--text-color);
   -webkit-box-shadow: 0px 1px 8px -2px var(--text-color);

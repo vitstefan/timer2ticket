@@ -25,7 +25,7 @@ export class RegistrationService {
         catchError((error) => {
           console.error(error);
           // rethrow status back to the component
-          return throwError(error.status);
+          return throwError(error);
         })
       );
   }

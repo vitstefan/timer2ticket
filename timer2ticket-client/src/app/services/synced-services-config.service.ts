@@ -3,7 +3,6 @@ import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ServiceObject } from '../models/service_object';
-import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +24,7 @@ export class SyncedServicesConfigService {
         catchError((error) => {
           console.error(error);
           // rethrow status back to the component
-          return throwError(error.status);
+          return throwError(error);
         })
       );
   }
@@ -40,7 +39,7 @@ export class SyncedServicesConfigService {
         catchError((error) => {
           console.error(error);
           // rethrow status back to the component
-          return throwError(error.status);
+          return throwError(error);
         })
       );
   }

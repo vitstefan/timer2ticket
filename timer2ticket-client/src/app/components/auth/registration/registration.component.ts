@@ -47,12 +47,13 @@ export class RegistrationComponent implements OnDestroy {
         this.app.hideLoading();
         this.app.buildNotification('Successfully registrated. Please log in to continue.');
       }, (errorStatus) => {
+        console.log(errorStatus);
         if (errorStatus === 409) {
-          this.app.buildNotification('Error.');
+          this.app.buildNotification('User with this email already exists.');
         } else if (errorStatus === 400) {
           this.app.buildNotification('Passwords are not same.');
         } else {
-          this.app.buildNotification('Server error.');
+          this.app.buildNotification('Server did not respond. Try again please.');
         }
         this.app.hideLoading();
       });

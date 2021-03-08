@@ -30,7 +30,7 @@ export class AppData {
       { key: 'Redmine', label: 'Redmine', route: 'config-steps/redmine-configuration', timeEntriesSyncHint: 'No special action needed.', },
       {
         key: 'TogglTrack', label: 'Toggl Track', route: 'config-steps/toggl-track-configuration',
-        timeEntriesSyncHint: `Project is required for the time entry to sync.<br />Optionally, choose an issue from the tags (if not choosed, time entry will be added to the project).<br />Optionally, choose an activity from the tags (if not choosed, default will be set).`,
+        timeEntriesSyncHint: `Project or issue is required for the time entry to sync.<br />Optionally, choose an issue from the tags (if not chosen, time entry will be added to the project without the issue).<br />Optionally, choose an activity from the tags (if not chosen, default will be set).`,
       },
     ];
 
@@ -52,7 +52,7 @@ export class AppData {
 
   public setUser(user: User): void {
     this._userSource.next(user);
-    this.setStepsCount(user.serviceDefinitions.length);
+    this.setStepsCount(user?.serviceDefinitions?.length ?? 0);
   }
 
   public get stepsCountValue(): number {
