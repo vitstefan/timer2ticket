@@ -53,10 +53,10 @@ export class ConfigSyncJob extends SyncJob {
     let operationsOk = true;
 
     // Check all objectsToSync and their corresponding mapping
-    try {
-      for (const objectToSync of objectsToSync) {
-        let mapping = this._user.mappings.find(mapping => mapping.primaryObjectId === objectToSync.id);
+    for (const objectToSync of objectsToSync) {
+      let mapping = this._user.mappings.find(mapping => mapping.primaryObjectId === objectToSync.id);
 
+      try {
         if (!mapping) {
           // scenario a)
           console.log('ConfigSyncJob: create');
@@ -70,11 +70,11 @@ export class ConfigSyncJob extends SyncJob {
         // push to checkedMappings
         // can be undefined from scenario a)
         checkedMappings.push(mapping);
+      } catch (ex) {
+        // TODO catch specific exception
+        // console.log(ex);
+        operationsOk = false;
       }
-    } catch (ex) {
-      // TODO catch specific exception
-      // console.log(ex);
-      operationsOk = false;
     }
 
     // obsolete mappings = user's mappings that were not checked => there is no primary object linked to it
@@ -100,11 +100,13 @@ export class ConfigSyncJob extends SyncJob {
               === undefined);
     }
 
-    // persist changes in the mappings
     if (operationsOk) {
-      // only if all api operations were ok, persist changes
-      await databaseService.updateUser(this._user);
+      // if all operations OK => set lastSuccessfullyDone (important to set not null for starting TE syncing)
+      this._user.configSyncJobDefinition.lastSuccessfullyDone = new Date().getTime();
     }
+    // persist changes in the mappings
+    // even if some api operations were not ok, persist changes to the mappings - better than nothing
+    await databaseService.updateUser(this._user);
 
     return operationsOk;
   }

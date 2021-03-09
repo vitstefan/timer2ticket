@@ -35,6 +35,8 @@ export class TimeEntriesSyncJob extends SyncJob {
     start.setHours(0);
     start.setMinutes(0);
 
+    let operationsOk = true;
+
     // Need to load all time entries (TE) for each service
     // Try to find time entry in timeEntrySyncedObjects (TESOs) from DB
     // Scenarios:
@@ -122,31 +124,51 @@ export class TimeEntriesSyncJob extends SyncJob {
 
           console.log('TESyncJob: a)');
           const newTimeEntrySyncedObject = await this._createTimeEntrySyncedObject(serviceTimeEntriesWrapper, otherServiceTimeEntriesWrappers, timeEntry);
+          // if defined and not null => create TESO
           if (newTimeEntrySyncedObject) {
             // no need to await DB changes
             databaseService.createTimeEntrySyncedObject(newTimeEntrySyncedObject);
+          } else if (newTimeEntrySyncedObject === undefined) {
+            // if undefined => error
+            operationsOk = false;
           }
+          // if null, TE is not meant to be synced
         }
       }
     }
 
     // other scenarios b), c), d), e)
     for (const timeEntrySyncedObjectWrapper of timeEntrySyncedObjectWrappers) {
-      if (await this._checkTimeEntrySyncedObject(timeEntrySyncedObjectWrapper)) {
-        // some changes probably were made to TESO object, update it in db
-        // no need to await DB changes
-        databaseService.updateTimeEntrySyncedObject(timeEntrySyncedObjectWrapper.timeEntrySyncedObject);
+      try {
+        if (await this._checkTimeEntrySyncedObject(timeEntrySyncedObjectWrapper)) {
+          // some changes probably were made to TESO object, update it in db
+          operationsOk &&= await databaseService.updateTimeEntrySyncedObject(timeEntrySyncedObjectWrapper.timeEntrySyncedObject) !== null;
+        }
+      } catch (ex) {
+        operationsOk = false;
       }
     }
 
-    return true;
+    if (operationsOk) {
+      this._user.timeEntrySyncJobDefinition.lastSuccessfullyDone = new Date().getTime();
+      databaseService.updateUser(this._user);
+    }
+
+    return operationsOk;
   }
 
+  /**
+   * Creates TESO based on given TE in other services
+   * @param timeEntryOriginServiceWrapper 
+   * @param otherServiceTimeEntriesWrappers 
+   * @param timeEntry 
+   * @returns updated TESO OR null if not meant to be synced OR undefined if error
+   */
   private async _createTimeEntrySyncedObject(
     timeEntryOriginServiceWrapper: ServiceTimeEntriesWrapper,
     otherServiceTimeEntriesWrappers: ServiceTimeEntriesWrapper[],
     timeEntry: TimeEntry)
-    : Promise<TimeEntrySyncedObject | undefined> {
+    : Promise<TimeEntrySyncedObject | undefined | null> {
     const newTimeEntrySyncedObjectResult = new TimeEntrySyncedObject(this._user._id);
 
     // firstly, push origin service (from which time entry came from)
@@ -155,6 +177,11 @@ export class TimeEntriesSyncJob extends SyncJob {
     );
 
     const otherServicesMappingsObjects = timeEntryOriginServiceWrapper.syncedService.extractMappingsObjectsFromTimeEntry(timeEntry, this._user.mappings);
+
+    if (otherServicesMappingsObjects.length === 0) {
+      // TE sync is not required (e.g. not project selected etc.)
+      return null;
+    }
 
     for (const otherServiceDefinition of otherServiceTimeEntriesWrappers) {
       await this._createTimeEntryBasedOnTimeEntryModelAndServiceDefinition(

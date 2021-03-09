@@ -31,17 +31,22 @@ cron.schedule('0-59 * * * * *', () => {
 
     if (job) {
       console.log(' -> Do the job');
-      job.doTheJob().then(res => {
-        if (res) {
-          console.log(' -> Job successfully done.');
-        } else {
-          // not successful, try to add again to the queue
-          // TODO uncomment, but be careful with it
-          // do not want to be in the cycle => return to queue only twice or something...
-          // console.log(' -> Added job again');
-          // jobQueue.enqueue(job);
-        }
-      });
+      try {
+        job.doTheJob().then(res => {
+          if (res) {
+            console.log(' -> Job successfully done.');
+          } else {
+            console.log(' -> Job unsuccessful.');
+            // not successful, try to add again to the queue
+            // TODO uncomment, but be careful with it
+            // do not want to be in the cycle => return to queue only twice or something...
+            // console.log(' -> Added job again');
+            // jobQueue.enqueue(job);
+          }
+        });
+      } catch (ex) {
+        // do not want to terminate whole app if something not ok
+      }
     }
   }
 });
@@ -146,9 +151,13 @@ function scheduleJobs(user: User) {
   }
 
   if (cron.validate(user.timeEntrySyncJobDefinition.schedule)) {
-    const task = cron.schedule(user.timeEntrySyncJobDefinition.schedule, () => {
-      console.log(' -> Added TESyncJob');
-      jobQueue.enqueue(new TimeEntriesSyncJob(user));
+    const task = cron.schedule(user.timeEntrySyncJobDefinition.schedule, async () => {
+      const actualUser = await databaseService.getUserById(user._id.toString());
+      // check if not null => there was at least 1 successful config job done => basic mappings should be there
+      if (actualUser?.configSyncJobDefinition.lastSuccessfullyDone) {
+        console.log(' -> Added TESyncJob');
+        jobQueue.enqueue(new TimeEntriesSyncJob(actualUser));
+      }
     });
     activeUsersScheduledTimeEntriesSyncTasks.set(user._id.toString(), task);
   }
