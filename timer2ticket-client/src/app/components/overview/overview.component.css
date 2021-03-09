@@ -23,6 +23,14 @@ section>* {
   text-align: center;
 }
 
+section.date-section>*.outdated-notice {
+  font-size: clamp(0.6em, 2vw, 0.9em);
+}
+
+section.date-section>* {
+  font-size: clamp(0.8em, 3vw, 1.4em);
+}
+
 .order-padding {
   padding-right: 0.8em;
 }

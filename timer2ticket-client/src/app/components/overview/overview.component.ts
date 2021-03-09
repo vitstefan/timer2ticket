@@ -2,9 +2,10 @@ import { Component, OnDestroy, OnInit, SecurityContext } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { AppComponent } from 'src/app/app.component';
-import { User } from 'src/app/models/user.model';
+import { User } from 'src/app/models/user';
 import { JobService } from 'src/app/services/job.service';
 import { AppData } from 'src/app/singletons/app-data';
+import { Utilities } from 'src/app/utilities/utilities';
 
 @Component({
   selector: 'app-overview',
@@ -32,11 +33,37 @@ export class OverviewComponent implements OnInit, OnDestroy {
   public isScheduled: boolean;
   private _askedForScheduled: boolean;
 
+  public isLastSuccessfullyDoneConfigToday: boolean;
+  public isLastSuccessfullyDoneConfigYesterday: boolean;
+  public lastSuccessfullyDoneConfig: Date | null;
+
+  public isLastSuccessfullyDoneTimeEntriesToday: boolean;
+  public isLastSuccessfullyDoneTimeEntriesYesterday: boolean;
+  public lastSuccessfullyDoneTimeEntries: Date | null;
+
+  // set to true if user turned on sync manually
+  public showDatesCanBeOutdated: boolean;
+
   ngOnInit(): void {
     this._askedForScheduled = false;
 
     this.$_userSubscription = this._appData.user.subscribe(user => {
       this.user = user;
+
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+
+      if (this.user.configSyncJobDefinition?.lastSuccessfullyDone) {
+        this.lastSuccessfullyDoneConfig = new Date(this.user.configSyncJobDefinition.lastSuccessfullyDone);
+        this.isLastSuccessfullyDoneConfigToday = Utilities.compareOnlyDate(today, this.lastSuccessfullyDoneConfig) === 0;
+        this.isLastSuccessfullyDoneConfigYesterday = Utilities.compareOnlyDate(yesterday, this.lastSuccessfullyDoneConfig) === 0;
+      }
+      if (this.user.timeEntrySyncJobDefinition?.lastSuccessfullyDone) {
+        this.lastSuccessfullyDoneTimeEntries = new Date(this.user.timeEntrySyncJobDefinition.lastSuccessfullyDone);
+        this.isLastSuccessfullyDoneTimeEntriesToday = Utilities.compareOnlyDate(today, this.lastSuccessfullyDoneTimeEntries) === 0;
+        this.isLastSuccessfullyDoneTimeEntriesYesterday = Utilities.compareOnlyDate(yesterday, this.lastSuccessfullyDoneTimeEntries) === 0;
+      }
 
       // ask for schedule only once after user's data were subscribed
       // if this check is not here => infinite calling (since there is _appData.setUser)
@@ -55,6 +82,8 @@ export class OverviewComponent implements OnInit, OnDestroy {
         }, (error) => {
           this._jobRequestError();
         });
+
+        this.showDatesCanBeOutdated = false;
       }
     });
 
@@ -92,6 +121,7 @@ export class OverviewComponent implements OnInit, OnDestroy {
 
       if (this.isScheduled) {
         this.user.status = 'active';
+        this.showDatesCanBeOutdated = true;
         this.app.buildNotification('Jobs correctly started.');
       } else {
         this.user.status = 'inactive';
