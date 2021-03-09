@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AppComponent } from 'src/app/app.component';
-import { User } from 'src/app/models/user.model';
+import { User } from 'src/app/models/user';
 import { JobService } from 'src/app/services/job.service';
 import { UserService } from 'src/app/services/user.service';
 import { AppData } from 'src/app/singletons/app-data';

@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { JobDefinition } from 'src/app/models/job_definition';
-import { User } from 'src/app/models/user.model';
+import { User } from 'src/app/models/user';
 import { AppData } from 'src/app/singletons/app-data';
 
 @Component({

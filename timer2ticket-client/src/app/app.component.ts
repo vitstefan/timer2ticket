@@ -1,7 +1,7 @@
 import { AfterContentInit, Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { User } from './models/user.model';
+import { User } from './models/user';
 import { AppData } from './singletons/app-data';
 
 declare var buildNotification: any;

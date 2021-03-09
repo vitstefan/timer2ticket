@@ -3,7 +3,7 @@ import { Subscription } from 'rxjs';
 import { AppComponent } from 'src/app/app.component';
 import { ServiceDefinition } from 'src/app/models/service_definition/service_definition';
 import { ServiceObject } from 'src/app/models/service_object';
-import { User } from 'src/app/models/user.model';
+import { User } from 'src/app/models/user';
 import { SyncedServicesConfigService } from 'src/app/services/synced-services-config.service';
 import { AppData } from 'src/app/singletons/app-data';
 

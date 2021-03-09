@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ServiceDefinition } from 'src/app/models/service_definition/service_definition';
 import { ServiceToChoose } from 'src/app/models/service_to_choose';
-import { User } from 'src/app/models/user.model';
+import { User } from 'src/app/models/user';
 import { AppData } from 'src/app/singletons/app-data';
 import { ConfirmDialogComponent } from '../../confirm-dialog/confirm-dialog.component';
 

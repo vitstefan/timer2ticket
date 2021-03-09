@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ServiceToChoose } from '../models/service_to_choose';
-import { User } from '../models/user.model';
+import { User } from '../models/user';
 
 /**
  * Class representing app data, should be treated as singleton
